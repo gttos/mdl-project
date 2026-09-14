@@ -1,8 +1,13 @@
 # Estandarización de empty states en iOS
 
-> **Estado:** pendiente de implementación
+> **Estado:** diferida post-beta. La beta está prevista para octubre de 2026 y esta iniciativa se
+> retomará después de esa salida, con objetivo de completarla antes del lanzamiento de enero de
+> 2027. La app ya contiene algunos estados vacíos puntuales, pero todavía no existe el componente
+> común ni está auditada la cobertura de las once superficies. No bloquea la beta salvo que la
+> validación física detecte una pantalla completamente vacía, un estado confundido con error/loading
+> o un callejón sin salida para crear el primer dato.
 > **Proyecto:** iOS
-> **Última actualización:** 2026-07-18
+> **Ventana prevista:** después de la beta de octubre de 2026 y antes del lanzamiento de enero de 2027
 
 ## Objetivo
 
@@ -52,6 +57,11 @@ El estado de estadísticas complementa el skeleton existente después de una car
 
 ## Orden general
 
+La ejecución queda pausada hasta después de la beta de octubre de 2026. Al retomarla, primero se
+auditan los estados puntuales ya existentes para decidir cuáles se reutilizan, cuáles se sustituyen y
+qué superficies siguen realmente sin tratamiento; no se parte de la premisa de que toda la app está
+vacía de soluciones actuales.
+
 1. Crear el componente y las cadenas localizadas.
 2. Integrarlo en lista/timelines, mapa/estadísticas y perfil; estos grupos pueden avanzar por separado.
 3. Limpiar strings anteriores, actualizar documentación estable y validar accesibilidad/layout.
@@ -70,7 +80,7 @@ El estado de estadísticas complementa el skeleton existente después de una car
 
 | Proyecto | Estado | Próximo resultado |
 |---|---|---|
-| iOS | Pendiente | IOS-01 — componente base y localización |
+| iOS | Diferida post-beta | Tras octubre de 2026: auditar los estados existentes y ejecutar IOS-01; completar la iniciativa antes del lanzamiento de enero de 2027 |
 
 ## Plan local
 
@@ -78,6 +88,6 @@ El estado de estadísticas complementa el skeleton existente después de una car
 
 ## Referencias estables
 
-- Sistema UI: `ios/docs/architecture/ui-system.md`
-- Timeline: `ios/docs/domains/features/timeline-behavior.md`
-- Estadísticas: `ios/docs/domains/features/statistics.md`
+- Arquitectura y sistema UI de iOS: [`ios/docs/ARCHITECTURE.md`](../../../../../ios/docs/ARCHITECTURE.md)
+- Reglas canónicas de Timeline: [`product/docs/TIMELINE.md`](../../../TIMELINE.md)
+- Reglas canónicas de estadísticas: [`product/docs/STATISTICS.md`](../../../STATISTICS.md)

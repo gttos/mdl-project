@@ -1,113 +1,117 @@
 # 1. Contexto del producto y sus entidades
 
-> Este documento explica MDL en lenguaje de producto, tal como funciona hoy. Los campos y ubicaciones exactos están en el [inventario maestro](02_MDL_Inventario_Maestro_Datos.md).
+> Descripción del modelo objetivo de la beta de lanzamiento a 2 de septiembre de 2026. Los campos y ubicaciones exactos están en el [inventario maestro](02_MDL_Inventario_Maestro_Datos.md).
 
 ## 1. Qué es MDL
 
-MDL es una aplicación iOS de uso personal para organizar información sobre vínculos afectivos. Permite registrar personas de interés, experiencias compartidas, evolución de relaciones, valoraciones subjetivas, fotografías locales y métricas derivadas del historial.
+MDL es una aplicación iOS de diario privado para personas adultas. Permite registrar personas de interés, experiencias, evolución de relaciones, valoraciones subjetivas, fotografías locales y estadísticas personales.
 
-No es una red social: la persona descrita no crea necesariamente una cuenta, no recibe un perfil público y no participa en el registro. El contenido lo introduce y consulta el usuario titular de la cuenta.
+No es una red social. La persona descrita no crea necesariamente una cuenta, no recibe un perfil público, no participa en el registro y no conoce necesariamente su existencia. Todo el contenido lo introduce y consulta el titular de la cuenta.
 
-## 2. Qué intenta resolver
-
-El producto busca que el usuario pueda:
-
-1. recordar quién es una persona y datos que considera relevantes;
-2. registrar cuándo y cómo fue una experiencia;
-3. seguir el comienzo, evolución o cierre de una relación;
-4. consultar todos esos eventos en un timeline;
-5. obtener métricas personales basadas en la información estructurada introducida.
-
-## 3. Personas afectadas
+## 2. Personas afectadas
 
 | Persona | Relación con MDL | Datos principales |
 |---|---|---|
-| Usuario | Crea una cuenta y usa la aplicación | Identidad, contacto, autenticación, uso, registros, valoraciones y métricas |
-| Crush o tercera persona | Persona descrita por el usuario; normalmente no tiene cuenta | Perfil, características, contacto, fechas, estados, valoraciones, experiencias y relaciones |
-| Personal autorizado | Acceso técnico a la base de datos o a la infraestructura de producción | Puede leer directamente las columnas cifradas con la clave de aplicación descrita en la sección 6; no existe hoy un panel de administración separado |
-| Proveedores | Prestan infraestructura o servicios auxiliares | Ver la lista verificada en el [inventario maestro](02_MDL_Inventario_Maestro_Datos.md#12-proveedores-y-datos-recibidos) |
+| Persona usuaria | Crea y usa una cuenta | identidad, contacto, autenticación, actividad, diario, valoraciones y estadísticas |
+| Crush o tercera persona | Es descrita por el usuario | nombre/contacto, rasgos, edad, país/género, fechas, estados, experiencias, relaciones y fotos |
+| Personal autorizado | Opera seguridad, infraestructura o soporte | acceso limitado a datos estructurales, metadata y logs según rol; no dispone de una función de descifrado del Vault |
+| Proveedores | Infraestructura o funciones auxiliares | ciphertext, cuenta, email o telemetría según el servicio y la configuración real |
 
-"Crush" es el nombre de producto para la ficha privada de una persona que interesa al usuario. No implica que esa persona conozca o acepte la creación de la ficha.
+“Crush” es el nombre de producto de una ficha privada. No implica consentimiento, conocimiento ni relación contractual de esa tercera persona con MDL.
 
-## 4. Recorrido principal del usuario hoy
+## 3. Recorrido principal
 
-### 4.1 Cuenta y Vault
+### 3.1 Cuenta y Vault
 
-El usuario se registra con email, contraseña y fecha de nacimiento, o mediante Google OAuth. Por separado, puede configurar un Vault: un contenedor criptográfico en el que la app cifra contenido en el dispositivo con una clave (VMK) que el servidor nunca recibe en claro.
+La persona crea una cuenta y acepta las versiones vigentes de términos y privacidad. Después configura un Vault. iOS genera una VMK aleatoria por cuenta, la encapsula para recovery y conserva el material local dentro del namespace de esa cuenta.
 
-El Vault no es parte obligatoria del alta de cuenta ni sustituye hoy a las columnas funcionales descritas en 4.2: ambos mecanismos conviven para el mismo contenido.
+El servidor almacena cuenta, datos estructurales, encapsulaciones, bindings, metadata y ciphertext remoto, pero no recibe la VMK en claro ni dispone de una operación para descifrar el contenido del Vault.
 
-### 4.2 Crear un crush
+En un dispositivo sin estado local, la app consulta primero API. Si existe un Vault remoto, entra en recovery y no crea otro que lo sobrescriba. La beta contempla un único dispositivo activo por Vault; recovery sustituye el dispositivo, no sincroniza dos copias activas de forma continua.
 
-El usuario crea una ficha de la persona con un único formulario. Hoy ese formulario envía a la API, en la misma operación:
+### 3.2 Crear y editar contenido
 
-- **estructura funcional en texto plano:** ID, edad, país, género, fecha en que se conocieron, estado, características seleccionadas y valoraciones;
-- **contenido de contacto:** nombre (se guarda en texto plano en la base de datos), profesión, teléfono o mensajería, redes sociales y fecha de nacimiento. Salvo el nombre, estos campos se cifran al guardarse con la clave de aplicación (`APP_KEY`) y el backend los descifra automáticamente cada vez que arma una respuesta;
-- **fotografías:** archivos sanitizados que permanecen exclusivamente en el dispositivo.
+Cada alta o edición separa dos clases de información:
 
-Además, si el usuario tiene el Vault activo, iOS construye una segunda copia cifrada con su VMK y la sincroniza como blob independiente. Esa segunda copia no reemplaza a la primera: la columna funcional sigue existiendo, legible por el backend, salvo que un proceso posterior la elimine (hoy no ocurre; ver sección 6).
+- **payload funcional:** IDs, fechas, estados, satisfacción/ratings, asociaciones, categorías y otros atributos que API necesita para aplicar reglas y estadísticas;
+- **snapshot privado:** nombre/contacto/redes/cumpleaños del crush, lugar/descripción de experiencia y nota de cierre, cifrado en iOS antes de transferirse.
 
-### 4.3 Crear una experiencia
+Cada crush, experiencia o relación tiene identidad funcional propia y una entrada Vault independiente. Una edición crea una revisión cifrada nueva; la anterior se retira sólo después de verificar la sustituta. Esa coexistencia técnica no es un historial de versiones disponible para el usuario.
 
-Una experiencia es un evento asociado a un crush. La API conserva su ID, fecha, asociación y nivel de satisfacción en columnas legibles. El lugar y la descripción viajan en el mismo request HTTP y se guardan cifrados con la clave de aplicación en las columnas `place` y `description`. Si el Vault está activo, además se cifra una copia con VMK y se sincroniza como blob.
+Un token opaco derivado con la VMK enlaza la entidad funcional con todas sus revisiones. API puede compararlo para autorizar y borrar ciphertext, pero no derivar el contenido o la VMK.
 
-### 4.4 Crear o actualizar una relación
+### 3.3 Relaciones
 
-Una relación representa un periodo o estado relacional con un crush. La API conserva fechas, estado, asociación y, cuando corresponda, vínculo con una experiencia, en columnas legibles. El texto de cierre viaja en el mismo request y se guarda cifrado con la clave de aplicación en la columna `closure_note`. Si el Vault está activo, además se cifra una copia con VMK y se sincroniza como blob.
+El modelo vigente crea una relación inicial obligatoria junto con el crush y registra cambios posteriores en orden cronológico. API conserva estado, fechas, match status, asociaciones y vínculo con experiencias; la nota libre de cierre vive en Vault.
 
-### 4.5 Timeline, lista y métricas
+Los estados vigentes incluyen categorías como prospecto, one-night stand, FWB, relación, rechazo o terminación. Aunque la nota esté cifrada, la estructura visible puede revelar o permitir inferir aspectos de la vida afectiva o sexual de la persona usuaria y de la tercera persona.
 
-La API entrega la estructura ordenada de crushes, experiencias y relaciones, incluyendo el contenido de las columnas cifradas con clave de aplicación ya descifrado cuando el Resource correspondiente lo incluye. iOS puede además superponer contenido proveniente del Vault descifrado localmente cuando esa entrada ya fue migrada. Las métricas se calculan a partir de datos funcionales legibles por la API.
+Existe un rediseño conceptual posterior con fase, etiqueta de vínculo, historial de etiquetas y motivo de cierre. No está activo. Si se implementa, aumentará la precisión temporal e inferencial y exigirá revisar inventario, minimización, EIPD, transparencia, retención, derechos y estadísticas antes del despliegue.
 
-La búsqueda por nombre en la lista de crushes se realiza localmente. iOS mantiene además un índice local de texto (FTS5) que guarda nombre, profesión, lugar, descripción y nota de cierre **en texto plano** en el dispositivo, independiente de las tablas cifradas del Vault. El término de búsqueda no se envía a la API.
+### 3.4 Lectura, Timeline y búsqueda
 
-### 4.6 Borrado
+API entrega la estructura funcional. iOS descifra el contenido privado localmente y fusiona ambos por ID. La búsqueda privada se realiza en memoria sobre contenido ya desbloqueado; no existe un índice persistente de plaintext del Vault.
 
-El usuario puede borrar una fotografía, una entidad concreta, un crush con sus entidades asociadas o solicitar la baja de cuenta. Al borrar un crush, la API elimina (soft delete) su fila y las de sus experiencias y relaciones, incluyendo las columnas cifradas con clave de aplicación. Si existen blobs del Vault, iOS intenta borrarlos remotamente y continúa aunque falle. La carpeta local de fotografías del crush **no se elimina** en este flujo y permanece en el dispositivo.
+Timeline y estadísticas se construyen a partir de la estructura. Por ello fechas, estados, asociaciones, rasgos y valoraciones siguen siendo visibles para backend y pueden producir inferencias aunque el texto libre esté E2EE.
 
-## 5. Las tres entidades prioritarias
+### 3.5 Fotos
 
-| Entidad | Qué representa | Datos en columnas funcionales (API-DB) | Contenido también presente en Vault, solo para entradas migradas |
-|---|---|---|---|
-| Crush | Ficha privada de una persona | IDs, edad, país, género, estados, fechas, características, valoraciones, nombre (texto plano), email/teléfono/redes (cifrados con clave de aplicación) | Nombre, profesión, contacto, redes y fecha de nacimiento |
-| Experiencia | Evento vivido o registrado con un crush | IDs, asociación, fecha, satisfacción, lugar y descripción (cifrados con clave de aplicación) | Lugar y descripción |
-| Relación | Periodo o estado relacional con un crush | IDs, asociación, estado, fechas, vínculo con experiencia, nota de cierre (cifrada con clave de aplicación) | Nota de cierre |
+Las fotos de crush se sanean en iOS y permanecen en el sandbox local. No se suben a S3 ni se incorporan al Vault remoto durante la beta. El modelo de lanzamiento exige que queden excluidas de backups no deseados del sistema y se eliminen al borrar el crush o la cuenta.
 
-La columna "cifrados con clave de aplicación" no es una frontera de seguridad equivalente al Vault: una sola clave de aplicación protege el contenido de todas las cuentas, y el backend descifra ese contenido de forma rutinaria al servir respuestas.
+### 3.6 Borrado y recovery
 
-## 6. Dónde vive la información hoy
+Eliminar una experiencia o relación elegible emite una petición funcional que coordina la fila estructural, binding y blobs. iOS mantiene una intención durable hasta confirmar el resultado. La purga física se difiere hasta siete días para permitir un procesamiento técnico controlado.
 
-| Capa | Función | Qué puede leer |
+Eliminar un crush coordina también sus descendientes, entradas locales y fotos. La baja de cuenta revoca sesiones, elimina el Vault y artefactos locales y aplica el tratamiento aprobado a la estructura restante.
+
+Recovery reconstruye el inventario activo en el dispositivo, lo descifra y valida antes de publicarlo. No borra objetos remotos.
+
+## 4. Entidades prioritarias
+
+| Entidad | Estructura visible para API | Contenido privado Vault |
 |---|---|---|
-| App iOS | Interfaz, cifrado/descifrado del Vault, búsqueda local y fotografías | Datos funcionales, contenido de columnas cifradas con clave de aplicación (vía API) y, mientras el Vault está desbloqueado, contenido descifrado con VMK |
-| Keychain de iOS | Custodia de la VMK y claves locales | Material criptográfico bajo controles del sistema |
-| Base local de iOS | Vault SQLite, cola y **índice de búsqueda en texto plano** | Ciphertext y metadata del Vault; el índice FTS5 guarda texto legible |
-| API y base relacional (MySQL/RDS) | Cuenta, estructura funcional, columnas cifradas con clave de aplicación y metadata del Vault | Todo el contenido funcional; descifra de forma transparente `Crush.email/whatsapp*/instagram/facebook/snapchat/tiktok`, `Experience.description/place`, `Relationship.closure_note` y `User.phone`. No lee el ciphertext del Vault |
-| Almacenamiento remoto de objetos (S3) | Conservación de blobs del Vault | Ciphertext y metadata del objeto, solo para entradas ya migradas al Vault |
-| Proveedores auxiliares | Autenticación federada, correo, observabilidad, distribución | Ver el [inventario maestro](02_MDL_Inventario_Maestro_Datos.md#12-proveedores-y-datos-recibidos) |
+| User | ID, email, password hash, fecha de nacimiento, perfil, plan, flags y aceptaciones | No aplica; email/teléfono no pertenecen al Vault |
+| Crush | ID, edad/ancla, país, género, categoría, rasgos, ratings, `met_at`, archivo y derivados | nombre, profesión, contacto/redes, cumpleaños y detalles privados |
+| Experience | ID, crush, fecha, satisfacción, correlación y vínculos | lugar y descripción |
+| Relationship | ID, crush, estado, fechas, match status, correlación y experiencia vinculada | nota de cierre |
 
-## 7. Flujo conceptual de datos hoy
+Entidades técnicas adicionales: Vault, VaultBlob, VaultEntityBinding, encapsulaciones principal/mnemónica, dispositivos, recovery keys, eventos de actividad/auditoría/autenticación/seguridad, aceptaciones legales y feedback de baja.
 
-1. El usuario introduce datos en iOS en un único formulario por entidad.
-2. iOS envía todos los campos —funcionales y de contacto/lugar/descripción/nota— en el mismo request HTTP a la API.
-3. La API persiste los campos funcionales en texto plano y cifra con la clave de aplicación los campos de contacto, lugar, descripción y nota de cierre antes de guardarlos.
-4. Si el usuario tiene el Vault activo, iOS cifra en paralelo una copia del mismo contenido con su VMK y la sincroniza como blob independiente hacia S3, vía la API.
-5. Para leer, iOS obtiene desde la API la estructura funcional junto con el contenido de las columnas cifradas con clave de aplicación ya descifrado; si la entrada también existe en el Vault, iOS puede optar por mostrar la versión descifrada localmente en su lugar.
+## 5. Dónde vive la información
 
-## 8. Puntos que la asesoría debe entender desde el inicio
+| Capa | Conserva | Puede leer plaintext privado |
+|---|---|---|
+| iOS desbloqueado | estructura, snapshots, proyecciones y fotos | Sí durante la sesión autorizada |
+| SQLite local | ciphertext, metadata e intenciones durables | No sin VMK |
+| Keychain | VMK y material local protegido | Bajo controles del dispositivo |
+| API/RDS | cuenta, estructura, bindings, encapsulaciones, metadata y eventos | No el contenido Vault; sí datos funcionales y de cuenta |
+| S3 Vault | objetos ciphertext | No sin VMK |
+| Sandbox de fotos | imágenes locales saneadas | El dispositivo |
+| Email/observabilidad | mensajes transaccionales y contexto técnico | Según proveedor/configuración; nunca contenido Vault por diseño |
 
-- Una parte relevante de los datos describe a terceras personas que no interactúan con MDL.
-- El nombre del crush se guarda en texto plano en la base de datos de producción.
-- El resto del contenido de contacto, lugar, descripción y nota de cierre está cifrado con una única clave de aplicación que el backend usa para descifrar automáticamente; no es cifrado de extremo a extremo.
-- El texto privado también viaja por HTTP en el mismo request que los campos funcionales, incluso cuando el usuario tiene el Vault activo.
-- El Vault E2EE existe y está parcialmente activo, pero no sustituye a las columnas anteriores: ambos coexisten para el mismo contenido.
-- Las fotografías son locales, no se excluyen del backup del sistema operativo y no se borran automáticamente al borrar el crush.
-- Las métricas son individuales y se basan en datos identificables; no deben presentarse como anónimas.
+## 6. Datos derivados y estadísticas
 
-## 9. Preguntas de contexto para la asesoría
+MDL deriva edad, signo zodiacal, rating global, estado actual, match status, duraciones y estadísticas. La beta muestra estadísticas de la propia cuenta y no compara usuarios entre sí.
 
-1. ¿Cómo debe calificarse el papel de MDL respecto de los datos que un usuario introduce sobre una tercera persona?
-2. ¿Qué deberes de información existen respecto de esas terceras personas y qué excepciones podrían resultar aplicables?
-3. ¿El uso de una única clave simétrica de aplicación para cifrar en reposo el contenido de todas las cuentas constituye una medida de seguridad suficiente para el tipo de datos involucrados, mientras el Vault E2EE no reemplace ese mecanismo?
-4. ¿Qué edad mínima y mecanismo proporcionado de verificación deben aplicarse en cada país de lanzamiento?
-5. ¿Debe suspenderse el paso a producción hasta que el nombre del crush y el resto del contenido descrito se cifren, o es aceptable lanzar con el estado descrito en este expediente sujeto a un plan de corrección con fecha?
+Una baja puede conservar datos sólo conforme a la decisión aprobada. Mantener filas individuales desidentificadas no garantiza anonimato jurídico; puede ser seudonimización. La asesoría debe decidir entre agregación irreversible con eliminación de fuentes o retención seudonimizada justificada.
+
+## 7. Límites que el texto público debe explicar
+
+- E2EE protege contenido privado, no toda la estructura ni metadata.
+- Un dispositivo desbloqueado o un secreto de recovery expuesto puede revelar el Vault.
+- Perder todos los mecanismos de recovery puede volver irrecuperable el contenido.
+- La beta limita el Vault a un dispositivo activo.
+- Las fotos son locales y no tienen backup remoto de MDL.
+- El backend no puede descifrar el Vault, lo que condiciona soporte, acceso y portabilidad.
+- “Anonimizado” no debe usarse públicamente hasta validar el riesgo de reidentificación de lo conservado.
+
+## 8. Preguntas para asesoría
+
+1. ¿Qué finalidades y bases corresponden al usuario y a las terceras personas descritas?
+2. ¿Qué deber de información existe respecto de esas terceras personas y qué excepciones podrían aplicar?
+3. ¿Los estados relacionales, experiencias, género, ratings y combinaciones de rasgos deben tratarse como categorías especiales o inferencias equivalentes en alguno de los países de lanzamiento?
+4. ¿Qué campos estructurales son proporcionales y cuáles deben pasar a Vault, reducirse o eliminarse?
+5. ¿Es necesaria una EIPD antes del lanzamiento?
+6. ¿Cómo debe calificarse la estructura conservada tras la baja y cuál de las dos estrategias de estadísticas posteriores se aprueba?
+7. ¿Qué lenguaje puede usarse sobre E2EE, recovery, borrado, fotos locales y dispositivo único?
+8. ¿Qué procedimiento permite atender a una tercera persona sin revelar el diario del usuario?

@@ -1,130 +1,217 @@
 # 4. Ciclo de vida, conservación y ejercicio de derechos
 
-> **Estado:** actual, verificado el 5 de agosto de 2026.
-> **Importante:** los plazos técnicos existentes no constituyen por sí solos una política aprobada, y algunas conductas descritas acá son defectos conocidos, no diseño deseado.
+> Modelo objetivo de lanzamiento a 2 de septiembre de 2026. Los plazos jurídicos, excepciones y lenguaje público deben ser aprobados por la asesoría y contrastados con la configuración real.
 
-## 1. Conceptos utilizados
+## 1. Principios operativos
 
-| Concepto | Significado en MDL |
-|---|---|
-| Activo | Dato visible y utilizado para prestar el servicio |
-| Revocado | Artefacto conservado temporalmente pero ya no autorizado para uso, como una sesión o dispositivo |
-| Soft delete | Registro oculto para el producto pero todavía presente en la base |
-| Purga | Eliminación física de la fila u objeto operativo |
-| Borrado local | Eliminación en un dispositivo concreto |
-| Seudonimización | Reducción de identificadores directos con posibilidad de reidentificación |
-| Anonimización | Sobrescritura irreversible de campos con placeholders (ej. `deleted_{id}@anon.anon`); los registros anonimizados se conservan para estadísticas agregadas |
+- Conservar sólo datos necesarios para una finalidad aprobada.
+- Distinguir uso activo, soft delete, purga, backup y conservación legal.
+- No presentar soft delete como destrucción física inmediata.
+- No presentar seudonimización como anonimización jurídica.
+- Coordinar estructura, Vault, dispositivo y proveedores en cada borrado.
+- Evitar copiar contenido íntimo a tickets, emails, logs o expedientes de derechos.
+- Poder demostrar qué se eliminó, qué se retiene, por qué y hasta cuándo.
 
-## 2. Ciclo de vida general hoy
+## 2. Ciclo de vida
 
-1. **Recogida:** el usuario introduce datos en un único formulario por entidad; los campos funcionales y el contenido de contacto/lugar/descripción/nota viajan juntos por HTTP.
-2. **Persistencia dual:** la API guarda los campos funcionales en texto plano, cifra con la clave de aplicación los campos de contacto/lugar/descripción/nota, y —si el Vault está activo— iOS cifra en paralelo una copia con VMK.
-3. **Actualización:** el valor se corrige; en Vault la versión anterior permanece hasta confirmar la nueva, salvo el bug de recovery descrito en el documento 03.
-4. **Solicitud de borrado:** se revocan accesos y se marcan las entidades remotas afectadas.
-5. **Purga operativa:** se eliminan filas y objetos del Vault tras la ventana técnica (7 días para blobs).
-6. **Expiración de copias:** backups, réplicas y logs del proveedor según su configuración, no auditada en este expediente.
+1. **Alta provisional:** API crea la cuenta y el material mínimo de autenticación/verificación; iOS no crea ni sincroniza Vault antes de verificar el email.
+2. **Verificación:** la cuenta provisional sólo accede a verificar email durante siete días desde el alta; reenviar OTPs no extiende ese plazo.
+3. **Uso:** tras verificar, API conserva estructura; iOS puede configurar/descifrar Vault localmente y muestra datos fusionados.
+4. **Rectificación:** una edición crea una revisión cifrada nueva y retira la anterior después de verificarla.
+5. **Archivo:** oculta el crush de la lista activa, sin cambiar su conservación.
+6. **Borrado funcional:** deja de usar o mostrar la entidad tras confirmación y soft-deletea estructura/blobs cuando corresponda.
+7. **Purga:** elimina físicamente filas/objetos elegibles después de la ventana técnica.
+8. **Baja:** revoca acceso, elimina Vault/artefactos locales y aplica la política aprobada a estructura, evidencias y estadísticas. Una cuenta provisional que no verifica en siete días entra en este flujo y no se conserva como lead.
+9. **Backups:** expiran por un ciclo propio y no deben reintroducir datos al uso ordinario tras una restauración.
 
-## 3. Matriz de conservación
+## 3. Matriz de conservación para aprobación
 
-| Categoría | Regla técnica hoy | Inicio del plazo | Efecto esperado del borrado | Punto que debe validar la asesoría |
-|---|---|---|---|---|
-| Cuenta activa | Mientras se presta el servicio | Alta | Anonimización + soft delete | Plazo tras baja y excepciones justificadas |
-| Tokens y sesiones | Hasta expiración (30 días) o revocación | Emisión | `sanctum:prune-expired` diario | Plazo máximo y logs asociados |
-| Códigos de recuperación (OTP) | Purgables 24 horas después de expirar | Expiración | Eliminar registro | Suficiencia y plazo del proveedor de correo |
-| Crush, experiencia y relación | Soft delete; purga técnica documentada a 7 días (a confirmar contra el comando real) | Solicitud de borrado | Eliminar estructura funcional, **incluyendo las columnas cifradas con clave de aplicación** | Si siete días es proporcionado |
-| Blob Vault borrado | Purga técnica tras 7 días (`vault:purge-blobs`, diario) | Soft delete | Eliminar objeto S3 y fila de metadata | Backups y versiones del proveedor |
-| Dispositivo y recovery key | Mientras estén autorizados o sean recuperables | Autorización/creación | Revocar o eliminar al sustituir/baja | Historial mínimo de seguridad |
-| **Fotografías** | **Hasta borrado individual manual únicamente** | Creación local | **No se elimina automáticamente al borrar el crush ni la cuenta** | Debe corregirse antes de anunciar borrado completo al usuario |
-| Eventos de actividad | Documentado como purga >7 días salvo cinco últimos por usuario | Creación | Cascade con entidad asociada | Confirmar comando real |
-| Auditoría (`AuditEvent`) | Documentado a 90 días | Creación | Purga automática | Confirmar comando real y proporcionalidad |
-| Alertas de seguridad (`SecurityAlert`) | Documentado a 30 días | Creación | Purga automática | Confirmar comando real |
-| Aceptaciones legales | Sin poda automática identificada | Aceptación | Se conserva aunque la cuenta esté en soft delete | Plazo probatorio |
-| Feedback de baja | Sin poda automática identificada | Envío | — | Texto libre, soporte y plazo |
-| Backups y réplicas de infraestructura | No definido por el repositorio de aplicación | Copia | Depende de configuración de AWS RDS/S3, no auditada acá | Plazo máximo por sistema y proveedor |
+| Categoría | Regla técnica o propuesta | Acción al borrar/baja | Decisión/evidencia necesaria |
+|---|---|---|---|
+| Cuenta activa | mientras exista la cuenta y finalidad | identificadores directos se eliminan/sustituyen y usuario se desactiva | base, campos necesarios y plazo posterior |
+| Cuenta provisional sin verificar | siete días fijos desde el alta; los reenvíos no alteran el plazo | baja íntegra y liberación del email; no conversión automática a lead | scheduler, prueba de borrado y base/aviso aplicables |
+| Token de sesión | 7 días desde emisión | revocación inmediata en logout/baja | pruning efectivo |
+| Identidad federada Apple activa | mientras exista el vínculo de autenticación y la cuenta | retirar al desvincular o dar de baja; una revocación Apple cierra sesiones, pero no borra por sí sola el diario | inventario, transparencia y gestión de Private Relay |
+| Continuación federada Apple | 10 minutos o primer uso | purga tras uso, expiración o rechazo | token público nunca persistido; claims mínimos cifrados |
+| Intención de revocación Apple completada | sólo hasta confirmar el resultado | nulificar el refresh token y retirar la intención | ejecución idempotente y evidencia técnica mínima |
+| Intención de revocación Apple fallida | 30 días desde el fallo final tras cinco reintentos rápidos | reintento manual autorizado durante la ventana; al vencimiento, eliminación definitiva de fila y token | alerta operativa, tarea de purga y prueba de que la baja MDL no se revierte |
+| Notificación server-to-server Apple procesada | 30 días | purga de digest, tipo y timestamp; el último evento aplicable queda sólo con la identidad activa | deduplicación, orden y protección frente a eventos tardíos |
+| OTP | vigencia corta del flujo | invalidación tras uso, intentos o expiración | plazos exactos y pruning |
+| Aceptaciones legales | mientras sea necesario demostrar la versión aceptada | posible conservación probatoria | plazo y datos de contexto mínimos |
+| Estructura activa de crush/experience/relationship | mientras exista la entidad/cuenta | soft delete o desidentificación según flujo | necesidad y finalidad por campo |
+| Snapshot Vault vigente | mientras exista la entidad privada | soft delete coordinado | acceso, portabilidad y backups |
+| Revisión sustituida | hasta verificar la nueva | cleanup inmediato tras confirmación | SLA y monitorización de huérfanos |
+| Blob soft-deleted | 7 días hasta purga programada | destrucción objeto/fila | ejecución, reintentos, versiones y backups |
+| Binding opaco | durante el soft delete y hasta completar la purga física del grafo asociado | conservarlo para retry/purga y eliminarlo cuando ya no quede ningún blob del grafo | ejecución idempotente, reintentos y evidencia de cierre |
+| Fotos locales | mientras exista foto/crush/cuenta | borrar con foto, crush o baja | exclusión de backup y file protection |
+| ActivityEvent | elegible tras 7 días, conservando hoy 5 recientes por cuenta | retirar con entidad/baja | decidir si la excepción de 5 es necesaria |
+| AuditEvent | 30 días | purga programada salvo hold aprobado | finalidad forense, acceso y plazo |
+| AuthEvent | 90 días en el modelo actual | purga programada | antiabuso, campos, plazo y coherencia con herramientas operativas |
+| SecurityAlert | 30 días | purga programada | finalidad, mensajes/metadata y acceso |
+| Logs API/CloudWatch/Sentry | configuración real | expirar/borrar según proveedor | captura de configuración, DPA y región |
+| Backups RDS/S3 | configuración real | expiración y bloqueo de reactivación | inventario, plazo y procedimiento de restore |
+| Email/SES | entrega, rebote y logs | según proveedor | contenido, retención y subencargados |
+| Feedback de baja | motivo, texto, estado y recibo | puede sobrevivir por finalidad aprobada | necesidad de texto libre, acceso y plazo |
+| Estructura para estadísticas posteriores | por decidir | agregación irreversible o retención seudonimizada | decisión central de Legal/Product |
 
-La existencia de una regla en el código no demuestra que la purga se ejecute correctamente en producción; debe verificarse con evidencia operativa antes de afirmarlo públicamente.
+Un plazo de código no es automáticamente un plazo legal correcto. Si Legal cambia un plazo, debe cambiar también la configuración, el scheduler, las pruebas y la documentación pública.
 
-## 4. Borrado de una entidad
+**Desajuste técnico a cerrar antes del lanzamiento:** los modelos vigentes fijan 90 días para `AuthEvent` y 30 días para `SecurityAlert`, pero el comando operativo de investigación describe 30 y 7 días respectivamente. La ejecución real, sus mensajes y las evidencias entregadas a Legal deben converger en un único plazo aprobado.
 
-### 4.1 Experiencia o relación
+## 4. Borrado por alcance
 
-El borrado trata como una unidad: fila funcional en API-DB (incluyendo columnas cifradas con clave de aplicación), entrada Vault local si existe, versión o versiones remotas del Vault, y eventos asociados. Un error remoto en el Vault conserva las referencias necesarias y deja la operación pendiente de reintento.
+### 4.1 Foto
 
-### 4.2 Crush
+- borra original saneado, thumbnail/cache e identificador local asociados;
+- no emite una petición de media remota porque las fotos no salen del dispositivo en beta;
+- respeta posibles copias del sistema operativo según su configuración y capacidades.
 
-Al borrar un crush hoy:
+### 4.2 Experiencia
 
-- se aplica soft delete a la fila funcional del crush, sus experiencias y relaciones, incluyendo las columnas cifradas con clave de aplicación;
-- iOS intenta borrar cada blob remoto del Vault y continúa si falla;
-- se eliminan entradas Vault locales y notas locales del dispositivo;
-- **la carpeta local de fotografías `Documents/LocalMedia/<crushId>/` no se elimina** y permanece en el dispositivo hasta que el usuario la borre manualmente o desinstale la app.
+- retira la fila funcional y su uso ordinario;
+- elimina el vínculo con una relación sin borrar esa relación;
+- soft-deletea todas las revisiones Vault del binding;
+- limpia entries e intención local después de confirmación;
+- purga objetos/fila elegibles después de siete días.
 
-La interfaz no debe presentarse como si el borrado incluyera las fotografías mientras este comportamiento no cambie.
+### 4.3 Relación
 
-## 5. Baja integral de cuenta
+- sólo se elimina si es la última y no es la relación inicial;
+- reabre la relación anterior cuando corresponde;
+- soft-deletea todas sus revisiones Vault;
+- no borra una experiencia vinculada salvo que la persona la elimine por separado;
+- la restricción funcional no limita los derechos: una solicitud jurídica requiere un procedimiento distinto del botón ordinario.
 
-Según las reglas de negocio verificadas en el código (BR-60 a BR-69):
+### 4.4 Crush
 
-1. la anonimización es irreversible: los valores originales no pueden recuperarse;
-2. el email se reemplaza por `deleted_{id}@anon.anon`;
-3. el nombre del crush se reemplaza por `ANON_{random}`;
-4. los campos PII se sobrescriben con placeholders;
-5. los registros anonimizados se preservan para estadísticas agregadas;
-6. el soft delete del usuario se ejecuta después de la anonimización;
-7. los tokens Sanctum se revocan de inmediato;
-8. la eliminación de archivos S3 legacy es asíncrona vía job con reintentos (máximo 3);
-9. los `ActivityEvent` del usuario se eliminan en cascada;
-10. la anonimización de cada crush está protegida por try/catch: el fallo de uno no interrumpe los demás.
+El borrado debe abarcar:
 
-**No verificado en esta revisión:** si el Vault (blobs, devices, recovery keys) y las fotografías locales quedan cubiertos por el mismo flujo de baja integral, o si requieren pasos separados. Debe confirmarse con ingeniería antes de describir la baja como completa en la política pública. El `google_id` puede conservarse tras la anonimización según una decisión de negocio no cerrada (ver sección 20 de `api/BBP-MyDuckingLife.md`).
+- crush, relaciones y experiencias;
+- eventos funcionales relacionados;
+- bindings y todas las revisiones Vault;
+- entries, notas e intenciones locales;
+- carpeta `LocalMedia/{crushId}` y caches;
+- referencias derivadas que dejarían una entidad huérfana.
 
-Un dispositivo offline o perdido no está bajo control remoto absoluto de MDL.
+Los bindings del grafo se conservan únicamente durante el soft delete y la ventana de retry/purga de siete días. Se eliminan al completar la purga física de todas sus revisiones; el éxito funcional no se presenta como destrucción física inmediata.
 
-## 6. Backups, réplicas y almacenamiento remoto
+Archivar no ejecuta ninguna de estas acciones.
 
-No auditado en este expediente: configuración real de backups de RDS, versionado y lifecycle de S3, retención de logs de Sentry y del proveedor de correo. Debe solicitarse a operaciones antes de firmar cualquier plazo público.
+### 4.5 Cuenta
 
-## 7. Procedimiento para derechos del usuario
+#### Cuenta provisional sin verificar
 
-No existe hoy un procedimiento operativo documentado y ejecutado para derechos del usuario más allá de: edición directa del perfil propio, edición o borrado de crushes/experiencias/relaciones, y baja de cuenta con anonimización. **No existe un endpoint ni flujo de exportación de datos personales (portabilidad).** El siguiente procedimiento es una propuesta a validar, no una descripción de lo que ocurre hoy:
+Una cuenta provisional sólo puede usar autenticación, cierre de sesión y verificación de email. Si no verifica dentro de siete días desde el alta, se ejecuta la baja aplicable y se elimina el email; no se retiene ni reutiliza para marketing o leads sin una finalidad, base y consentimiento específicos aprobados. El plazo no se renueva al reenviar códigos. La implementación debe demostrar que no se crea Vault antes de una verificación correcta y que una baja de este tipo no deja tokens ni artefactos locales activos.
 
-1. **Recepción:** registrar solicitud, canal, fecha y alcance.
-2. **Identidad:** usar sesión autenticada cuando sea posible.
-3. **Búsqueda:** localizar API-DB (incluyendo columnas cifradas con clave de aplicación), blobs del Vault, proveedores, logs y dispositivo accesible.
-4. **Clasificación:** separar datos del usuario y datos sobre terceras personas.
-5. **Ejecución:** acceder, rectificar, exportar o suprimir según la respuesta jurídica.
-6. **Respuesta:** lenguaje claro, límites explicados.
+La baja se ejecuta como una única operación atómica y fail-closed: sólo se confirma al usuario cuando el estado remoto quedó coherente; un fallo parcial revierte por completo y no deja una baja a medias.
 
-## 8. Acceso y portabilidad del Vault
+La baja debe:
 
-El backend puede exportar de forma legible la cuenta, la estructura funcional (incluyendo el contenido de las columnas cifradas con clave de aplicación, que sí puede descifrar) y aceptaciones. No puede convertir el ciphertext del Vault en texto sin la VMK del usuario. **No existe hoy ninguna herramienta, endpoint ni flujo en iOS que genere una exportación legible para el usuario.** Cualquier afirmación pública de portabilidad debe esperar a que este flujo exista.
+1. autenticar y confirmar la intención;
+2. crear sólo la evidencia mínima aprobada;
+3. revocar tokens y bloquear nuevo uso;
+4. aplicar soft delete inmediato al Vault y a todos sus blobs (misma ventana de siete días que el borrado dirigido de experiencia/relación antes de la purga física) y eliminar de inmediato encapsulaciones, devices y recovery keys; los bindings se conservan sólo hasta completar esa purga;
+5. eliminar Keychain, SQLite, preferencias sensibles y fotos locales accesibles a la app;
+6. retirar o desidentificar cuenta y estructura según la estrategia aprobada;
+7. purgar datos temporales y notificar a proveedores cuando corresponda;
+8. emitir una confirmación comprensible que distinga efecto inmediato y expiración de backups.
 
-## 9. Rectificación
+La baja es irreversible. La restauración operativa de un backup no puede reactivar una cuenta ni su diario salvo un procedimiento excepcional jurídicamente aprobado que restaure el grafo completo de forma coherente. No existe una operación de "reset de Vault" independiente de la baja; recovery por contraseña o por frase de 24 palabras es el único mecanismo para recuperar acceso manteniendo la cuenta.
 
-| Dato | Mecanismo hoy |
-|---|---|
-| Cuenta | Edición directa |
-| Estructura funcional y contenido de contacto/lugar/descripción/nota | Edición de la entidad; se sobrescribe la columna funcional y, si aplica, se crea una nueva versión en el Vault |
-| Fotografía | Sustitución o borrado local |
-| Log histórico | No se reescribe de forma general |
+### 4.6 Inactividad
 
-## 10. Solicitudes de una tercera persona
+Product prevé notificar después de 18 meses sin login y cerrar la cuenta si no hay acceso durante los 20 días siguientes. La asesoría debe revisar base, contenido y frecuencia del aviso, umbral, canal, evidencia de entrega y tratamiento de datos después del cierre.
 
-La API no dispone de una búsqueda global fiable por nombre en el Vault, pero el nombre del crush **sí es buscable directamente en la base de datos funcional**, porque se guarda en texto plano. Esto cambia la evaluación de riesgo respecto de un modelo puramente E2EE: una solicitud de una tercera persona, o un acceso indebido a la base de datos, puede localizar su nombre sin necesitar ninguna clave.
+## 5. “Anonimización” y estadísticas después de la baja
 
-## 11. Restricción, oposición y decisiones automatizadas
+El flujo técnico sobrescribe email/nombre y otros identificadores directos y marca crushes como anonimizados. Las experiencias/relaciones pueden conservar estructura y vínculos. Esa operación puede impedir el uso normal, pero no determina por sí sola anonimato jurídico.
 
-No implementado hoy más allá del borrado de la entidad completa. La asesoría debe identificar qué tratamientos admiten oposición y si alguna presentación de métricas requiere revisión humana.
+Factores de reidentificación a evaluar:
 
-## 12. Evidencia operativa pendiente
+- UUIDs persistentes y relación entre tablas;
+- fechas exactas, país, edad, género y rasgos;
+- secuencias relacionales singulares;
+- ratings y actividad;
+- audit/auth/security events conservados;
+- backups o accesos auxiliares capaces de restablecer el vínculo.
 
-- confirmación de ejecución real, fallos y reintentos de las tareas de poda (`model:prune`, `sanctum:prune-expired`, `accounts:process-inactive`, `vault:purge-blobs`);
-- antigüedad por tabla y número de registros soft-deleted en producción;
-- prueba de que el borrado de un crush efectivamente elimina las columnas cifradas con clave de aplicación y no solo las oculta;
-- corrección y prueba del borrado de la carpeta de fotografías al borrar un crush;
-- decisión y construcción de un flujo real de exportación de datos;
-- confirmación del tratamiento del Vault y las fotos dentro de la baja integral de cuenta.
+Opciones que debe decidir la asesoría con Product:
 
-## 13. Referencia normativa para la revisión
+**A. Agregación irreversible**
 
-La asesoría debe contrastar este ciclo de vida con el [texto oficial del RGPD en EUR-Lex](https://eur-lex.europa.eu/eli/reg/2016/679/oj?locale=es), en particular los principios, derechos, seguridad, brechas y evaluación de impacto. Este documento no determina por sí mismo qué plazo o excepción resulta jurídicamente válido.
+- calcular métricas sin identificadores ni secuencias individuales;
+- aplicar umbrales/supresión de celdas raras;
+- eliminar las filas fuente después de verificar el agregado;
+- documentar imposibilidad razonable de reidentificación.
+
+**B. Retención seudonimizada**
+
+- reconocer que continúa siendo dato personal;
+- definir finalidad, base, plazo, acceso y separación de claves/vínculos;
+- excluirlo del uso ordinario y de nuevos fines incompatibles;
+- atender derechos y riesgo de reidentificación.
+
+Hasta escoger y verificar una opción, no prometer conservación “sólo anónima”.
+
+## 6. Procedimiento de derechos de la persona usuaria
+
+El procedimiento deberá:
+
+1. autenticar o verificar identidad de forma proporcionada;
+2. registrar solicitud, alcance y fecha sin copiar contenido Vault;
+3. localizar cuenta, estructura, metadata/blobs, eventos, logs y proveedores;
+4. explicar qué parte puede leer backend y qué parte sólo puede descifrarse en el dispositivo;
+5. aplicar acceso, rectificación, restricción, oposición, supresión o portabilidad según el criterio aprobado;
+6. comunicar destinatarios/proveedores cuando corresponda;
+7. responder dentro del plazo jurídico y conservar evidencia mínima;
+8. indicar datos no eliminados, motivo, plazo y vías de reclamación cuando aplique.
+
+La imposibilidad técnica del backend de descifrar el Vault no debe convertirse en una denegación automática. Puede requerir una exportación generada localmente por iOS y un procedimiento específico.
+
+## 7. Solicitudes de terceras personas descritas
+
+Una tercera persona puede desconocer la cuenta o el crush que la describe. El backend no puede buscar por nombre/contacto Vault, pero sí conserva estructura y puede existir información suficiente si el solicitante aporta datos adicionales.
+
+La asesoría debe definir:
+
+- cómo acreditar identidad y vínculo sin pedir material excesivo;
+- cuándo MDL está obligado o autorizado a buscar;
+- cómo equilibrar derechos del tercero con privacidad y derechos del usuario;
+- cómo evitar confirmar la existencia de un diario o revelar su contenido;
+- cuándo informar, rectificar, restringir o borrar;
+- cómo registrar la decisión sin copiar el contenido íntimo;
+- qué hacer cuando MDL no puede identificar razonablemente el registro.
+
+No se resolverá una solicitud accediendo indiscriminadamente al Vault del usuario ni pidiéndole su secreto de recovery.
+
+## 8. Acceso y portabilidad
+
+El backend puede exportar cuenta, estructura y metadata legible. No puede generar por sí solo una copia legible del contenido E2EE.
+
+El modelo a diseñar debe permitir que la persona autenticada:
+
+- genere en su dispositivo una exportación legible y estructurada;
+- elija un formato interoperable;
+- proteja el archivo durante generación, almacenamiento y entrega;
+- entienda que la exportación ya no está protegida por el Vault una vez fuera de la app;
+- no entregue VMK, frase o contraseña de recovery al backend.
+
+No prometer portabilidad completa hasta implementar y validar este flujo.
+
+## 9. Holds, fraude e incidentes
+
+Legal debe definir si existe algún supuesto que suspenda una purga: litigio, fraude, chargeback futuro, seguridad o obligación legal. Cada hold debe tener autorización, alcance, responsable, revisión y vencimiento; nunca conservar todo “por si acaso”.
+
+Un incidente puede exigir preservar evidencia sin difundir contenido. El procedimiento aplicable está en [respuesta a incidentes](anexos/respuesta-incidentes.md).
+
+## 10. Evidencia previa al lanzamiento
+
+- pruebas de borrado de foto, experiencia, relación, crush y cuenta;
+- prueba de purga después de siete días y gestión de fallos/reintentos;
+- inventario de backups, versiones y restore sin reactivación;
+- retención efectiva de Activity/Audit/Auth/Security events;
+- configuración real de CloudWatch, Sentry, SES y RDS/S3;
+- decisión firmada sobre estadísticas posteriores a la baja;
+- procedimiento probado para usuario y tercera persona;
+- exportación/portabilidad o texto público que describa honestamente su ausencia;
+- aprobación de plazos, excepciones y lenguaje público.

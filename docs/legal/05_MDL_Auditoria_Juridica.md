@@ -1,163 +1,152 @@
 # 5. Guía para la auditoría jurídica
 
-> **Destinatario:** asesoría jurídica, DPO o especialista RGPD.
-> **Objetivo:** convertir los hechos del expediente en un análisis jurídico y en medidas concretas de reducción de riesgo, antes de que la API actual reciba tráfico de producción.
-> **Límite:** las tablas son borradores de trabajo; MDL no fija aquí bases jurídicas, roles ni conclusiones.
+> Brief para asesoría basado en el modelo objetivo de beta a 2 de septiembre de 2026. Las conclusiones y textos finales corresponden al abogado o DPO, no a ingeniería.
 
-## 1. Encargo propuesto a la asesoría
+## 1. Encargo propuesto
 
-Se solicita revisar el **estado actual** descrito en este expediente —no un modelo futuro— y entregar:
+Revisar MDL antes del lanzamiento en España y el EEE —o en los países que confirme el responsable— y emitir criterios accionables sobre:
 
-- calificación de responsables, encargados, corresponsables y terceros;
-- mapa de finalidades y bases jurídicas por tratamiento;
-- una opinión específica sobre si es prudente subir la API a producción con el nombre del crush en texto plano y el resto del contenido privado protegido por una única clave simétrica de aplicación, o si debe condicionarse a correcciones previas;
-- análisis específico de datos relativos a personas sin cuenta;
-- evaluación de categorías especiales e inferencias sensibles;
-- conclusión motivada sobre la necesidad y alcance de una EIPD;
-- requisitos de edad, menores y verificación proporcionada por país;
-- Registro de Actividades de Tratamiento;
-- política de privacidad, términos y textos de información/aceptación acordes con el estado real, no con un estado aspiracional;
-- procedimiento de derechos para usuarios y terceras personas, incluyendo que hoy no existe exportación de datos;
-- revisión de proveedores, DPA, transferencias y subencargados, incluyendo la duplicidad de SDK de identidad (Firebase Auth + Amplify/Cognito);
-- criterios jurídicos del plan de respuesta a incidentes, distinguiendo el escenario de clave de aplicación comprometida del escenario de ciphertext Vault comprometido;
-- lista priorizada de medidas para reducir riesgo antes del lanzamiento.
+- responsable, encargados, destinatarios y posible representante o DPO;
+- alcance territorial y países de las personas afectadas;
+- finalidades, bases y compatibilidad de usos;
+- información a usuarios y a terceras personas descritas;
+- categorías especiales, inferencias y necesidad de EIPD;
+- edad mínima y tratamiento de intentos de registro de menores;
+- privacidad por diseño y por defecto, necesidad y minimización;
+- aceptación de términos y política de privacidad;
+- conservación, borrado, backups y estadísticas posteriores a la baja;
+- acceso, rectificación, oposición, restricción, supresión y portabilidad;
+- proveedores, transferencias, subencargados y medidas contractuales;
+- seguridad, incidentes y lenguaje público sobre E2EE;
+- control de cambios para relaciones, IA, OAuth y funciones posteriores.
 
-## 2. Hechos esenciales que no deben perderse
+## 2. Hechos esenciales
 
-1. MDL almacena información creada por un usuario sobre personas que normalmente no tienen cuenta.
-2. El nombre de esa persona se guarda hoy en texto plano en la base de datos de producción.
-3. El resto del contenido de contacto, lugar, descripción y nota de cierre está cifrado, pero con una única clave de aplicación (`APP_KEY`) que el backend usa para descifrar automáticamente cada vez que lo necesita; no es cifrado de extremo a extremo.
-4. Existe además un Vault E2EE parcialmente activo que cifra una copia del mismo contenido con una clave por usuario que el servidor nunca recibe — pero no reemplaza a los puntos 2 y 3.
-5. Un índice de búsqueda local en el dispositivo (FTS5) guarda ese mismo contenido en texto plano, fuera del cifrado del Vault.
-6. El texto privado viaja por HTTP en el mismo request que los datos funcionales, con o sin Vault activo.
-7. Las fotografías permanecen en el dispositivo, no se excluyen del backup del sistema operativo y no se eliminan automáticamente al borrar el crush.
-8. Las métricas se calculan para una persona concreta a partir de su historial; no son resultados anónimos.
-9. No existe hoy un flujo de exportación de datos personales (portabilidad).
-10. Dos SDK de identidad de terceros (Firebase Auth y AWS Amplify/Cognito) están activos simultáneamente en el cliente iOS.
+1. MDL es un diario privado, no una red social, y no publica perfiles.
+2. El usuario registra información sobre terceras personas que normalmente no tienen cuenta ni contacto con MDL.
+3. Los estados relacionales pueden revelar o permitir inferir vida afectiva o sexual.
+4. API conserva IDs, fechas, estados, ratings, país, género, rasgos, asociaciones, match status y metadata necesarios para el producto.
+5. En el modelo final, iOS cifra nombre, contacto, redes, cumpleaños, lugar, descripción y nota de cierre antes de transferirlos.
+6. Backend no recibe la VMK en claro y no dispone de una operación para descifrar el Vault.
+7. Un blob es el snapshot completo de una entidad; las revisiones anteriores sólo coexisten hasta verificar su sustituta.
+8. Un binding opaco permite localizar y borrar revisiones sin descifrar.
+9. Las fotos permanecen en el dispositivo, no se sincronizan con MDL y deben excluirse de backups no deseados.
+10. El borrado funcional precede a la purga física de blobs, prevista después de siete días.
+11. Recovery sustituye el dispositivo y no equivale a sincronización continua entre dos dispositivos activos.
+12. La API prepara estadísticas personales; el servicio LLM no recibe datos reales en beta.
+13. El rediseño de relaciones con fases, etiquetas y motivos de cierre es futuro y aumentaría la granularidad del tratamiento.
+14. El flujo interno llamado “anonimización” puede conservar filas estructurales enlazadas. Sin evaluación adicional, no debe asumirse que dejan de ser datos personales.
 
-## 3. Información empresarial y operativa pendiente
+## 3. Registro de actividades — borrador técnico
 
-- razón social, domicilio, representante y contacto de privacidad;
-- países, idiomas, canales de comercialización y edad mínima;
-- personal interno y externo con acceso a producción y a `APP_KEY`;
-- fecha objetivo para retirar las columnas cifradas con clave de aplicación una vez el Vault esté completo;
-- volumen esperado de usuarios, crushes, experiencias y relaciones;
-- proceso real de respuesta a derechos e incidentes, más allá de lo documentado en el código.
-
-## 4. Borrador de Registro de Actividades de Tratamiento
-
-| Tratamiento | Interesados | Datos principales | Finalidad técnica/producto | Sistemas/destinatarios | Conservación de referencia | Pregunta jurídica central |
-|---|---|---|---|---|---|---|
-| Alta y gestión de cuenta | Usuarios | Identidad, contacto, edad, país, credenciales, `google_id` | Crear, autenticar y operar la cuenta | iOS, API-DB, Google OAuth, Firebase, Amplify/Cognito | Vida de cuenta + plazo aprobado | Base, edad mínima, necesidad de dos SDK de identidad simultáneos |
-| Autenticación y recuperación de cuenta | Usuarios/dispositivos | Email, hashes, tokens, códigos OTP, IP, user agent | Acceso, recuperación y prevención de abuso | API-DB, SES, Sentry | Expiración; OTP 24h post-expiración | Base, proporcionalidad y plazo |
-| Gestión de crushes (estructura funcional) | Usuarios y terceras personas | Estructura, atributos, estados, fechas, valoraciones, **nombre en texto plano** | Diario, filtros, timeline y métricas | iOS, API-DB, AWS RDS | Vida de entidad + purga técnica | Papel de MDL, artículo 14, minimización, y si el nombre debe cifrarse antes de producción |
-| Contenido de contacto del crush (cifrado con clave de aplicación) | Usuarios y terceras personas | Email, WhatsApp, Instagram, Facebook, Snapchat, TikTok, fecha de nacimiento | Completar la ficha | API-DB (cifrado con `APP_KEY`), Vault si está activo | Vida de entidad | Suficiencia de una única clave simétrica, transparencia a terceros |
-| Gestión de experiencias | Usuarios y terceras personas | Asociación, fecha, satisfacción, lugar y descripción (cifrados con clave de aplicación) | Diario y timeline | API-DB, Vault si está activo | Vida de entidad | Intimidad, minimización y derechos de terceros |
-| Gestión de relaciones | Usuarios y terceras personas | Estados, fechas, asociación y nota de cierre (cifrada con clave de aplicación) | Historial relacional y timeline | API-DB, Vault si está activo | Vida de entidad | Intimidad, inferencias y derechos de terceros |
-| Índice de búsqueda local en claro | Usuarios y terceras personas | Nombre, profesión, lugar, descripción, nota de cierre en texto plano | Búsqueda local por nombre | Solo dispositivo iOS (`vault_search_index`) | Indefinida; sin poda confirmada | Si constituye una copia adicional no cifrada que deba eliminarse o justificarse |
-| Fotografías locales | Usuarios y terceras personas | Imagen re-codificada | Galería privada del crush | Solo dispositivo iOS; incluida en backups del sistema operativo por defecto | Hasta borrado manual; no se borra con el crush | Información al usuario sobre backups del SO, base legal, y corrección del borrado |
-| Métricas personales | Usuarios y terceras personas | Historial, atributos, valoraciones y resultados derivados | Autorreflexión y presentación de patrones | API en cálculo, respuesta iOS | Mientras existan fuentes | Perfilado, inferencias, oposición |
-| Vault E2EE (parcial) | Usuarios y terceras personas | Ciphertext, encapsulaciones, metadata, devices | Copia cifrada de extremo a extremo del mismo contenido funcional | iOS, API-DB, S3 | Vida de Vault + purga | Cómo describir un Vault parcial sin sobreestimar la protección real ante el usuario |
-| Comunicaciones transaccionales | Usuarios | Email, mensaje, entrega, rebote | Verificación, seguridad y servicio | API, Amazon SES | Según proveedor | Base, separación de marketing y plazo |
-| Aceptaciones legales | Usuarios | Documento, versión, fecha, IP y user agent | Demostrar presentación/aceptación | API-DB | Plazo probatorio | Qué exige aceptación y cuánto conservar |
-| Seguridad y observabilidad | Usuarios/dispositivos | IDs, rutas, IP, user agent, traces, eventos, errores | Prevenir, detectar e investigar | API-DB, Sentry | 7/30/90 días documentados, no auditados en producción | Base, acceso, proporcionalidad, brechas |
-
-La asesoría debe completar responsable, base, destinatarios, transferencias, plazos definitivos, medidas y derechos para cada fila.
-
-## 5. Evaluación de riesgos actuales para orientar la revisión
-
-| Riesgo | Personas afectadas | Escenario | Estado real | Pregunta de riesgo residual |
+| Actividad | Personas y datos | Finalidad técnica | Sistemas/destinatarios | Pregunta jurídica |
 |---|---|---|---|---|
-| Nombre de tercera persona en texto plano | Tercera persona | Cualquier acceso a la base de datos, incluido interno, lee el nombre sin necesitar ninguna clave | Confirmado en código (`Crush.name` sin mutator de cifrado) | ¿Debe bloquearse producción hasta cifrar este campo? |
-| Clave de aplicación única compromete a todas las cuentas | Usuario y tercera persona | Exposición o filtración de `APP_KEY` permite descifrar contacto, lugar, descripción y nota de cierre de **todas** las cuentas de una sola vez | Confirmado: `Crypt::encryptString` con `APP_KEY` en `Crush`, `Experience`, `Relationship`, `User.phone` | ¿Es proporcional este diseño mientras el Vault no lo reemplace? ¿Qué rotación y custodia de `APP_KEY` existen? |
-| Plaintext privado en índice local | Usuario y tercera persona | Acceso forense o backup del dispositivo expone `vault_search_index` en claro | Confirmado en código y documentación técnica | ¿Debe cifrarse el índice o eliminarse el texto indexado? |
-| Plaintext privado en tránsito HTTP | Usuario y tercera persona | El contenido de contacto/lugar/descripción/nota viaja sin cifrado de aplicación hasta la capa TLS, visible a WAF, balanceadores, logs de request si no hay scrubbing | Confirmado en documentación técnica (`decisions/vault-e2ee-architecture.md`) | ¿Qué scrubbing existe realmente en la infraestructura entre TLS y la aplicación? |
-| Fotos sin exclusión de backup ni borrado con el crush | Tercera persona (sujeto de la foto) y usuario | Una foto de una persona persiste en backups del sistema operativo y en el dispositivo después de que el usuario cree haber borrado el crush | Confirmado en código | ¿Qué información debe darse al usuario sobre este límite mientras no se corrija? |
-| Recovery del Vault borra entradas válidas | Usuario y tercera persona | Un crush con varias experiencias o relaciones pierde entradas del Vault durante una recuperación | Confirmado en documentación técnica | ¿Debe deshabilitarse recovery hasta corregirlo, dado el riesgo de pérdida de datos? |
-| Recovery mnemónico no validado | Usuario | La frase de 24 palabras puede no reconstruir el Vault en un dispositivo nuevo | Corrección en código, sin validación end-to-end confirmada | ¿Debe ocultarse esta opción de recuperación hasta validarla? |
-| Duplicidad de SDK de identidad | Usuario | Firebase Auth y Amplify/Cognito Auth activos simultáneamente | Confirmado en código | ¿Qué proveedor procesa realmente la autenticación y cuál es remanente? |
-| Ausencia de exportación de datos | Usuario | Una solicitud de portabilidad no puede satisfacerse hoy con una herramienta existente | Confirmado (BBP, sección 14.2) | ¿Qué plazo exige la asesoría para construir este flujo? |
-| Inferencias sensibles por combinación | Usuario y tercera persona | Estados, fechas, características y valoraciones revelan vida sexual, orientación, salud emocional u otros aspectos | Estructural, independiente del Vault | ¿Qué categorías y medidas reforzadas corresponden? |
-| Menores | Usuario y tercera persona | Usuario o persona descrita es menor | Edad de cuenta mínima 18 años verificada en registro; sin verificación equivalente sobre la tercera persona | ¿Qué edad mínima, exclusiones y controles son necesarios para la persona descrita? |
+| Cuenta y autenticación | usuario: email, perfil, DOB, credenciales, sesión, IP/eventos | alta, acceso y seguridad | iOS, API/RDS, email; Google si se activa | base, edad, necesidad y conservación |
+| Sign in with Apple | usuario: `sub` Apple, email o Private Relay, estado de forwarding, tokens técnicos de corta o limitada conservación y eventos de revocación | alta, acceso, vínculo explícito y revocación al borrar cuenta | iOS, API/RDS y Apple | proveedor/transferencias, transparencia, retención de token y respuesta ante revocación |
+| Verificación/recuperación | email, OTP, intentos, lockout y entrega | control del email y recuperación | API/RDS, mailer | anti-enumeración, retención y mensajes |
+| Diario estructural | usuario y terceros: IDs, fechas, estados, ratings, país/género/rasgos | Timeline, reglas y estadísticas | iOS, API/RDS | categorías especiales, minimización, terceros |
+| Contenido Vault | usuario y terceros: texto privado cifrado | diario, sync y recovery | iOS, API metadata, S3 ciphertext | transparencia, derechos y custodia de secretos |
+| Fotos locales | terceros: imágenes | galería privada | dispositivo y posibles backups del SO | información, seguridad y borrado |
+| Timeline y mapa | eventos, asociaciones, país y fechas | visualización personal | API/iOS | granularidad y retención |
+| Estadísticas personales | agregados e inferencias de la cuenta | información/reflexión personal | API/iOS | sensibilidad, explicabilidad y necesidad |
+| Datos posteriores a la baja | estructura desidentificada o agregada | estadísticas o evidencia aprobada | RDS/almacén que se defina | anonimato frente a seudonimización |
+| Auditoría y seguridad | IDs, IP, user agent, rutas, eventos y trazas | fraude, diagnóstico e incidentes | API, CloudWatch/Sentry | acceso, plazo y transferencias |
+| Email transaccional | email, contenido del mensaje, delivery/rebote | OTP y avisos | API/proveedor email | base, contenido, retención y subencargados |
+| IA futura | métricas o contexto que se autorice | insights narrativos | API/LLM/proveedor | nueva finalidad, proveedor, entrenamiento y derechos |
+| Rediseño futuro de relaciones | fases, etiquetas, historial, cierres y fechas | cronología/estadísticas más precisas | iOS/API/RDS | revisión previa de alto riesgo y transparencia |
 
-## 6. Preguntas prioritarias antes de producción
+## 4. Riesgos a priorizar
 
-### 6.1 Bloqueantes propuestos por el estado técnico
-
-1. ¿Debe cifrarse `Crush.name` antes de que la API reciba tráfico de producción, o es aceptable documentarlo como riesgo asumido con fecha de corrección?
-2. ¿Es aceptable, mientras el Vault no esté completo, seguir protegiendo contacto/lugar/descripción/nota únicamente con una `APP_KEY` simétrica compartida por todas las cuentas?
-3. ¿Debe deshabilitarse temporalmente la recuperación del Vault hasta corregir el bug de agrupación que borra entradas válidas?
-4. ¿Debe comunicarse a los usuarios actuales, antes de producción, que sus fotos no se excluyen de backups del sistema ni se borran con el crush?
-
-### 6.2 Personas, roles y bases
-
-5. ¿Qué entidad será responsable del tratamiento y necesita representante o DPO en la UE?
-6. ¿Cuál es la finalidad exacta y la base jurídica de cada tratamiento del borrador de RAT?
-7. ¿Qué papel tiene MDL respecto de datos introducidos por un usuario sobre una persona sin cuenta?
-8. ¿Qué información debe proporcionarse a esa tercera persona, cuándo y con qué excepciones?
-
-### 6.3 Intimidad, categorías especiales y perfilado
-
-9. ¿Qué campos o combinaciones pueden revelar categorías especiales o información de naturaleza sexual, afectiva o de salud?
-10. ¿Las métricas de MDL constituyen perfilado y pueden producir efectos jurídicos o significativamente similares?
-
-### 6.4 EIPD y privacidad desde el diseño
-
-11. Considerando el estado técnico descrito —nombre en claro, clave única de aplicación, índice local en claro, plaintext en tránsito— ¿debe realizarse una EIPD antes del lanzamiento?
-12. ¿Qué evidencia permite sostener de forma prudente cualquier afirmación pública sobre cifrado o E2EE mientras el estado sea el descrito en este expediente?
-
-### 6.5 Edad y menores
-
-13. ¿Cuál debe ser la edad mínima por país y qué mecanismo de garantía de edad es proporcionado?
-14. ¿Debe impedirse registrar a una tercera persona menor o limitar campos y funciones en ese supuesto?
-
-### 6.6 Transparencia y documentos públicos
-
-15. ¿Qué información de los artículos 13 y 14 debe aparecer en política, onboarding y pantallas contextuales, dado que el sistema no es hoy E2EE completo?
-16. ¿Cómo explicar en lenguaje claro y no engañoso la diferencia entre lo que ya está cifrado de extremo a extremo y lo que todavía no?
-
-### 6.7 Derechos y borrado
-
-17. ¿Cómo debe atenderse acceso, rectificación, oposición o supresión de una tercera persona, considerando que su nombre es buscable en texto plano?
-18. ¿Qué plazo exige la asesoría para implementar exportación de datos?
-19. ¿Son proporcionados los plazos técnicos documentados de 1, 7, 30 y 90 días, y están realmente activos en producción?
-
-### 6.8 Proveedores y transferencias
-
-20. ¿Qué proveedores actúan como encargados, responsables independientes o posibles corresponsables (AWS, Google, Firebase/Google, Sentry)?
-21. ¿Debe retirarse uno de los dos SDK de identidad (Firebase Auth o Amplify/Cognito) por no tener una finalidad necesaria y comunicada?
-
-### 6.9 Seguridad e incidentes
-
-22. ¿Qué supuestos activan notificación a autoridad o comunicación a afectados si se compromete la `APP_KEY` y expone datos de todas las cuentas?
-23. ¿Cómo debe valorarse una exposición de la `APP_KEY` frente a una exposición de ciphertext del Vault?
-
-## 7. Preguntas específicas para reducir riesgo de producto
-
-1. ¿Qué campos deberían dejar de recibirse por los endpoints funcionales y pasar exclusivamente por el Vault?
-2. ¿Conviene bloquear el alta de crushes hasta que el nombre esté cifrado?
-3. ¿Qué controles permiten al usuario ver rápidamente qué está protegido por el Vault y qué no?
-4. ¿Debe mostrarse una advertencia mientras el Vault sea parcial, en vez de presentarlo como cifrado de extremo a extremo completo?
-5. ¿Qué revisión periódica debe detectar cambios de scope, SDK, campos o inferencias antes del lanzamiento definitivo?
-
-## 8. Paquete de evidencia para la asesoría
-
-| Evidencia | Responsable interno | Estado esperado antes de firma |
+| Riesgo | Situación | Decisión requerida |
 |---|---|---|
-| Confirmación de qué columnas siguen sin cifrar (`Crush.name`) y plan de corrección | Ingeniería | Pendiente |
-| Informe de red mostrando el contenido privado viajando por HTTP en el request funcional | iOS/API | Pendiente |
-| Inspección de `vault_search_index` en dispositivo de prueba | iOS | Pendiente |
-| Prueba de recovery por frase de 24 palabras en dispositivo limpio | iOS/API | Pendiente |
-| Confirmación de cuál SDK de identidad procesa autenticación en producción | iOS | Pendiente |
-| Configuración de logs y scrubbing de Sentry para los campos identificados | Seguridad/operaciones | Pendiente |
-| Matriz de proveedores, DPA y transferencias (AWS, Google, Sentry, Apple) | Legal/operaciones | Pendiente |
-| Plan y fecha de retiro de columnas cifradas con clave de aplicación | Producto/ingeniería | Pendiente |
+| Terceras personas sin relación directa | intrínseco al diario | base, información/excepción y ejercicio de derechos |
+| Estados e inferencias íntimas | estructura visible aun con E2EE | categoría, minimización, salvaguardas y EIPD |
+| Reidentificación tras la baja | UUIDs, fechas y secuencias pueden persistir | agregación irreversible o retención seudonimizada |
+| Confianza excesiva en E2EE | metadata, cuenta, dispositivo y fotos quedan fuera | redacción pública precisa |
+| Borrado y backups | purga diferida y ciclos de proveedor | SLA, restauración, excepciones y prueba |
+| Recovery secrets | el usuario custodia material de alto impacto | UX, soporte, pérdida y compromiso |
+| Dispositivo único | no hay sync multi-device | transparencia y revocación del dispositivo anterior |
+| Portabilidad Vault | backend no puede descifrar | exportación local segura |
+| Fotos locales | fuera de S3/Vault remoto | backup del SO, file protection y borrado |
+| Observabilidad | riesgo de payload o identificadores en logs | allowlist, scrubbing, retención y acceso |
+| Proveedores/transferencias | inventario contractual incompleto | DPA, región, subencargados y garantías |
+| Funciones latentes | rutas/código no equivalen a función lanzada | inventario por build y control de cambios |
 
-## 9. Fuentes oficiales para la revisión
+## 5. Preguntas bloqueantes antes del lanzamiento
 
-- [Reglamento (UE) 2016/679 — texto oficial en español](https://eur-lex.europa.eu/eli/reg/2016/679/oj?locale=es).
-- [AEPD — realización de evaluaciones de impacto](https://www.aepd.es/derechos-y-deberes/cumple-tus-deberes/medidas-de-cumplimiento/realizacion-de-evaluaciones-de).
-- [AEPD — lista de tratamientos que requieren EIPD](https://www.aepd.es/sites/default/files/2019-09/listas-dpia-es-35-4.pdf).
-- [AEPD — gestión del riesgo y evaluación de impacto](https://www.aepd.es/guias/gestion-riesgo-y-evaluacion-impacto-en-tratamientos-datos-personales.pdf).
+1. ¿Quién es el responsable y cuál es el alcance territorial real?
+2. ¿Qué finalidad y base corresponden a cada actividad y a cada tipo de persona?
+3. ¿Qué deber de información existe respecto de terceras personas y qué excepciones son aplicables?
+4. ¿Los estados, experiencias, género, ratings o inferencias entran en categorías especiales en el caso concreto?
+5. ¿Requiere MDL una EIPD antes del lanzamiento por la combinación de intimidad, terceros, inferencias y aplicación móvil?
+6. ¿Qué campos estructurales son necesarios y proporcionales para cada finalidad?
+7. ¿Qué estrategia se aprueba después de la baja: agregación irreversible o retención seudonimizada?
+8. ¿Qué plazos y excepciones aplican a datos activos, soft deletes, blobs, bindings, eventos, logs y backups?
+9. ¿Qué lenguaje puede usarse sobre E2EE sin ocultar metadata, estructura, fotos locales, recovery y dispositivo único?
+10. ¿Cómo se atienden derechos de una tercera persona sin revelar la existencia o contenido del diario?
+11. ¿Qué exportación satisface acceso y portabilidad cuando backend no puede descifrar el Vault?
+12. ¿Qué edad mínima y mecanismo proporcionado de verificación corresponden en cada país?
+13. ¿Qué proveedores, regiones y transferencias pueden utilizarse y bajo qué contratos?
+14. ¿Qué eventos constituyen brecha notificable y cómo se evalúa ciphertext sin claves conocidas?
+15. ¿Qué revisión de cambio es obligatoria antes de activar el rediseño de relaciones o IA?
 
-La lista de la AEPD no sustituye el análisis concreto de naturaleza, alcance, contexto y fines. La asesoría debe dejar motivada su conclusión sobre la EIPD y las medidas resultantes.
+## 6. Entregables solicitados
+
+- política de privacidad y capas informativas de onboarding;
+- cláusulas de términos sobre diario de terceros, contenido, Vault, recovery, pérdida de secretos y baja;
+- Registro de Actividades de Tratamiento definitivo;
+- mapa de finalidades, bases, categorías, destinatarios y plazos;
+- screening de EIPD y EIPD completa si corresponde;
+- calendario de retención, matriz de backups y reglas de holds;
+- procedimiento de derechos para usuario y tercera persona;
+- diseño jurídico de acceso y portabilidad del Vault;
+- revisión de DPA, subencargados, regiones y transferencias;
+- política y plantillas de respuesta a incidentes;
+- texto aprobado para baja, inactividad, soft delete y purga;
+- criterio sobre anonimización o seudonimización de estadísticas posteriores;
+- checklist jurídico de cambio para relaciones, IA, OAuth y nuevos proveedores.
+- disclosure de Sign in with Apple en política pública y App Store Privacy, incluyendo Private Relay, revocación, conservación técnica y proveedor/transferencias.
+
+## 7. Evidencia que ingeniería y operaciones deben aportar
+
+- versión exacta de la app y de la API que se lanzarán;
+- inventario de rutas y campos de esa versión, demostrando ausencia de plaintext Vault;
+- migraciones aplicadas y prueba de retirada de columnas y contratos legacy;
+- pruebas saneadas de cifrado, ownership, retry, recovery y borrado;
+- prueba de borrado integral de foto, experiencia, relación, crush y cuenta;
+- ejecución real de la purga a siete días y manejo de fallos;
+- configuración de RDS, S3, lifecycle, versionado, backups y restauración;
+- configuración efectiva de logs, CloudWatch, Sentry y proveedor de email;
+- retenciones reales de ActivityEvent, AuditEvent, AuthEvent y SecurityAlert;
+- lista de personal con acceso, roles, MFA y trazabilidad;
+- proveedores contratados, regiones, DPA, subencargados y transferencias;
+- prototipos o capturas de registro, consentimiento, recovery, borrado, baja e inactividad;
+- decisión técnica implementada para estadísticas posteriores a la baja;
+- simulación del procedimiento de derechos e incidentes.
+
+## 8. Criterios para textos públicos
+
+La política y los términos deben distinguir con claridad:
+
+- datos de la cuenta frente a datos del diario;
+- contenido E2EE frente a estructura y metadata legibles;
+- persona usuaria frente a terceras personas descritas;
+- archivo, borrado funcional, purga y backup;
+- recovery del Vault frente a recuperación de la contraseña de acceso;
+- dispositivo único frente a sincronización multi-device;
+- fotos locales frente a objetos remotos del Vault;
+- estadísticas personales frente a datos conservados después de la baja;
+- función activa frente a prototipo o roadmap.
+
+No usar sin calificación profesional expresiones como “completamente anónimo”, “nadie puede acceder”, “borrado inmediato”, “cero conocimiento” o “cumplimiento RGPD garantizado”.
+
+## 9. Referencias oficiales para la revisión
+
+- Reglamento (UE) 2016/679, [texto consolidado en EUR-Lex](https://eur-lex.europa.eu/eli/reg/2016/679/oj?locale=es), en particular artículos 5, 6, 9, 12 a 22, 25, 28, 30, 32 a 35 y 44 y siguientes.
+- EDPB, [Guidelines sobre Evaluación de Impacto y alto riesgo](https://www.edpb.europa.eu/documents/guideline/data-protection-impact-assessments-high-risk-processing_en).
+- EDPB, [Guidelines 4/2019 sobre protección de datos desde el diseño y por defecto](https://www.edpb.europa.eu/documents/guideline/guidelines-42019-on-article-25-data-protection-by-design-and-by-default_en).
+- AEPD, [realización de evaluaciones de impacto](https://www.aepd.es/derechos-y-deberes/cumple-tus-deberes/medidas-de-cumplimiento/realizacion-de-evaluaciones-de).
+- AEPD, [lista de tratamientos que requieren EIPD conforme al artículo 35.4](https://www.aepd.es/sites/default/files/2019-09/listas-dpia-es-35-4_0.pdf).
+- Comisión Europea, [gestión de solicitudes de ejercicio de derechos](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/dealing-requests-individuals_en).
+
+Las referencias orientan el encargo y deben contrastarse con legislación nacional, autoridades competentes y países reales de lanzamiento.

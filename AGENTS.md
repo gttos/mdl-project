@@ -1,140 +1,61 @@
-# AGENTS.md — Trabajo en el directorio product/
+# AGENTS.md — Product
 
-> **Ámbito:** `product/` — documentación compartida y canónica de MDL.  
-> **Dirigido a:** Kimi (agente de razonamiento, análisis, planificación y coordinación transversal).  
-> **Propósito:** Definir qué información vive en `product/`, cómo se organiza, cómo se mantiene y cómo se crean feature maestras.
+Estas reglas se aplican por igual a Codex, ChatGPT, Claude Code y cualquier otro agente que trabaje en `product/`.
 
-## 1. Qué es product/
+## Autoridad documental
 
-`product/` es la **fuente canónica de conocimiento compartido** del producto MDL. No contiene código. Todo documento nuevo en `product/` se escribe en **español**.
+- [`docs/PRODUCT.md`](docs/PRODUCT.md): comportamiento estable y reglas funcionales.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): arquitectura transversal estable.
+- [`docs/VAULT.md`](docs/VAULT.md), [`docs/TIMELINE.md`](docs/TIMELINE.md), [`docs/STATISTICS.md`](docs/STATISTICS.md): subsistemas con complejidad propia — misma autoridad que `PRODUCT.md`/`ARCHITECTURE.md`, separados para no perder profundidad en un resumen. No crear un cuarto archivo de este tipo sin verificar primero que el tema realmente tiene un cluster propio de decisiones/riesgo, no sólo volumen.
+- [`docs/legal/`](docs/legal/README.md): documentos jurídicos modulares; no se consolidan ni modifican sin alcance legal explícito.
+- `docs/plans/active/<feature>/README.md`: una única feature maestra por iniciativa activa.
 
-- **Documentación de producto:** flujos de usuario, reglas de negocio, comportamientos end-to-end, contratos de integración entre `api/` e `ios/`.
-- **Documentación de arquitectura transversal:** visión general del sistema, límites de responsabilidad, servicios externos, fronteras de seguridad y privacidad.
-- **Documentación legal/privacidad:** inventario de datos, tratamientos, políticas de retención, cumplimiento, riesgos. Redactada para revisión por abogado, DPO o especialista RGPD.
-- **Decisiones transversales:** por qué se eligió una solución de producto o arquitectura que afecta a más de un proyecto.
-- **Migraciones transversales:** cambios que requieren coordinación de datos, compatibilidad, rollout por fases o impacto entre versiones.
-- **Planes cross-cutting:** feature maestras que orquestan el trabajo en `api/` e `ios/`.
+[`docs/product/business-blueprint.md`](docs/product/business-blueprint.md) es un artefacto de negocio mantenido directamente por el usuario. Los agentes pueden leerlo para detectar conflictos, pero no lo corrigen, resumen ni reestructuran sin una solicitud explícita. Puede conservar referencias históricas mientras el usuario lo termina; eso no convierte esas referencias en fuentes de autoridad ni autoriza a modificar el blueprint durante una consolidación general.
 
-## 2. Qué NO vive en product/
+Si una regla estable contradice un plan activo, el plan registra la transición y debe indicar qué se reemplazará. Si un plan local contradice Product, Product prevalece.
 
-- **Documentación técnica de implementación:** specs de DDD, bounded contexts, controladores, servicios, tests, patrones de UI, networking local, almacenamiento local. Eso vive en `api/` o `ios/`.
-- **Código, configuración, dependencias, CI/CD, Docker, Xcode, Laravel.** `product/` es documentación pura.
-- **Documentación de `llm/`**. El microservicio de LLM es independiente. Su documentación vive en `llm/`.
+Legal es autoridad en privacidad, retención, derechos y cumplimiento. Una contradicción entre Product/código y Legal no se resuelve por jerarquía automática: se documenta junto a la regla afectada y se eleva a revisión humana/legal.
 
-## 3. Cuándo actualizar product/
+## Qué se documenta aquí
 
-| Cambio | Qué actualizar en product/ |
-|---|---|
-| Nueva regla de producto o negocio | `product/docs/product/` |
-| Cambio de contrato entre cliente y backend | `product/docs/product/` + `product/docs/plans/active/` |
-| Cambio en arquitectura transversal | `product/docs/architecture/` |
-| Nueva decisión de producto/arquitectura | `product/docs/decisions/` |
-| Cambio en tratamiento de datos, retención o privacidad | `product/docs/legal/` |
-| Migración que afecte compatibilidad o datos | `product/docs/migrations/` |
-| Feature cross-cutting que requiere coordinación | `product/docs/plans/active/<feature-slug>/` |
-| Plan completado o cancelado | Mover de `active/` a `completed/` o `archived/` |
+- Decisiones de producto, escenarios Dado/Cuando/Entonces y criterios compartidos.
+- Propiedad de datos, límites entre proyectos y contratos transversales.
+- Impacto de privacidad/legal y orden global de una feature.
 
-## 4. Sistema de planes cross-cutting
+Los detalles de clases, endpoints, migraciones concretas, comandos y tests pertenecen al plan local de API/iOS/Android/LLM.
 
-### 4.1 Feature maestra
+## Estructura obligatoria
 
-Toda feature transversal debe tener una **feature maestra** en:
+- No crear archivos auxiliares de auditoría, investigación, decisión, estado, rollout, prompts, worklogs o checkpoints.
+- No crear carpetas `completed` ni `archived`.
+- Sólo puede existir un `README.md` por plan activo.
+- Al completar un plan, integrar primero el comportamiento final en `PRODUCT.md`, `ARCHITECTURE.md` o el documento profundo correspondiente; confirmar que cada proyecto afectado actualizó su snapshot técnico estable; y recién entonces eliminar el plan maestro y todos los locales.
+- No duplicar una regla: enlazar la sección canónica.
+- Todo Markdown nuevo de Product se escribe en español.
 
-```
-product/docs/plans/active/<feature-slug>/
-```
+Una iniciativa no se marca completada mientras conserve hechos estables únicamente en un plan activo o falte cualquiera de sus validaciones exigidas. En ese caso el estado es «implementación validada; cierre documental pendiente». Git conserva el historial: el cierre no crea informes, retrospectivas ni copias archivadas del plan.
 
-El único `README.md` de la feature maestra debe permitir responder:
+## Cambios originados en otro proyecto
 
-- ¿Qué cambia en el producto?
-- ¿Qué reglas compartidas se ven afectadas?
-- ¿Qué proyectos están involucrados?
-- ¿Cómo deben interactuar funcionalmente los proyectos?
-- ¿Qué orden general y dependencias existen?
-- ¿Cuáles son los criterios de aceptación y el estado resumido?
+Si durante trabajo en API, iOS, Android o LLM aparece o cambia una decisión funcional:
 
-### 4.2 Estructura de una feature maestra
+1. actualizar primero el documento o plan maestro de Product;
+2. referenciarlo desde el plan local;
+3. implementar sólo después de que la decisión esté cerrada;
+4. no conservar una versión alternativa de la regla en el repositorio local.
 
-```
-product/docs/plans/active/<feature-slug>/
-└── README.md              (producto, interacción, aceptación, orden y estado global)
-```
+## Método de trabajo
 
-No se crean documentos auxiliares dentro de la carpeta. Product define qué debe ocurrir; los detalles técnicos, operaciones, tests y riesgos de implementación viven en los planes locales.
+1. Al entrar en un alcance nuevo de la sesión, leer `PRODUCT.md`, `ARCHITECTURE.md`, el documento profundo del subsistema afectado, Legal relevante y los planes activos relacionados. En turnos posteriores del mismo alcance, revisar el plan y las secciones afectadas; releer un documento completo sólo si cambió, aparece una decisión/contrato nuevo o hay una contradicción. Leer el blueprint sólo cuando la tarea afecte estrategia de negocio o el usuario lo pida.
+2. Comparar documentación con el código cuando haya duda factual mediante `codebase-memory-mcp`, siguiendo íntegramente `../AGENTS.md` §6. No convertir el comportamiento accidental en una decisión de producto. Claude Code no reindexa.
+3. Presentar las ambigüedades funcionales al usuario de una en una.
+4. Preservar cambios ajenos y no tocar código, tests ni configuración cuando la tarea sea de coordinación documental.
+5. Antes de finalizar, verificar enlaces, contradicciones, duplicados y `git diff --check` en los repositorios modificados.
 
-### 4.3 Planes locales
+Cuando se acepta una fase local sin cambio funcional ni contractual, Product se actualiza primero pero de forma mínima: sólo el estado vigente y el siguiente paso real del plan maestro. No reescribir GWT, reglas ni contexto que no hayan cambiado.
 
-Además de la feature maestra, Kimi debe crear **planes locales ejecutables** dentro de cada proyecto afectado:
+## Seguridad
 
-```
-api/docs/plans/active/<feature-slug>/
-ios/docs/plans/active/<feature-slug>/
-```
+No abrir ni inspeccionar `.env`, `.env.*`, credenciales, `Config.Env`, entornos de procesos o secretos de AWS. Sólo se permiten archivos `.example` con placeholders.
 
-Cada carpeta local contiene únicamente `README.md`. Debe incluir la información necesaria para implementar ese lado sin duplicar la definición de producto:
-
-- Objetivo local
-- Fases numeradas (ej. API-01, API-02, IOS-01)
-- Dependencia de otras fases
-- Contrato esperado (qué endpoints, payloads, respuestas)
-- Criterio de entrada
-- Trabajo concreto de implementación
-- Tests
-- Validaciones manuales
-- Criterio de salida
-- Riesgos
-- Bloqueo
-- Siguiente fase permitida
-- Referencia a la feature maestra en `product/`
-
-### 4.4 Movimiento de planes entre estados
-
-| Estado | Cuándo | Acción |
-|---|---|---|
-| **active** | La feature está en análisis, diseño o implementación. | Crear feature maestra + planes locales. |
-| **completed** | La feature está terminada y sus criterios de aceptación se cumplieron. | Mover la feature maestra a `product/docs/plans/completed/<feature-slug>/`. Los planes locales pueden archivarse en los repos correspondientes. |
-| **archived** | La feature fue cancelada, reemplazada o quedó obsoleta. | Mover la feature maestra a `product/docs/plans/archived/<feature-slug>/`. Conservar contexto suficiente para saber por qué fue archivada. |
-
-## 5. Flujo de trabajo de Kimi en product/
-
-1. Leer `product/AGENTS.md` (este documento).
-2. Leer `product/docs/agents/README.md` (colaboración entre agentes).
-3. Leer `product/docs/architecture/system-overview.md` (límites del sistema).
-4. Analizar la feature cross-cutting: leer docs de producto, legal, decisiones relevantes.
-5. Crear o actualizar la feature maestra en `product/docs/plans/active/<feature-slug>/`.
-6. Crear planes locales en `api/docs/plans/active/` y `ios/docs/plans/active/` si aplica.
-7. Presentar al usuario para aprobación.
-8. Si el usuario aprueba, actualizar el estado dentro del `README.md` maestro y referenciar los planes locales.
-9. Periódicamente, revisar progreso de planes locales y actualizar la feature maestra si hay bloqueos o cambios de scope.
-
-## 6. Reglas no negociables
-
-1. **No duplicar documentación de implementación.** Si un spec explica cómo funciona un Controller de Laravel o un ViewModel de Swift, vive en `api/` o `ios/`, no en `product/`.
-2. **Todo Markdown nuevo en español.** Los documentos existentes en inglés se preservan en su idioma original.
-3. **No crear documentación vacía.** No generes archivos de relleno. Crea solo cuando haya material real que documentar.
-4. **La feature maestra es la fuente de verdad.** Si un plan local contradice la feature maestra, la feature maestra gana.
-5. **Kimi no toca código.** Kimi analiza, planifica y documenta. La implementación la hacen los agentes locales (Antigravity, Codex) dentro de `api/` e `ios/`.
-6. **Un archivo por nivel.** Cada plan activo usa un `README.md` maestro y un `README.md` por proyecto afectado; no se crean specs, matrices, prompts o reportes separados dentro de la carpeta del plan.
-
-## 7. Referencia rápida de documentos canónicos
-
-```
-product/
-├── README.md
-├── AGENTS.md
-└── docs/
-    ├── agents/
-    │   └── README.md          (colaboración entre agentes)
-    ├── architecture/
-    │   └── system-overview.md (visión general del sistema)
-    ├── product/
-    ├── legal/
-    ├── decisions/
-    ├── plans/
-    │   ├── active/            (features en curso)
-    │   ├── completed/         (features terminadas)
-    │   └── archived/          (features canceladas u obsoletas)
-    ├── migrations/
-    ├── templates/
-    └── archive/
-```
+Los flujos repository-local de SpecKit quedan retirados: no deben generar `spec.md`, `tasks.md`, checklists ni historiales paralelos.

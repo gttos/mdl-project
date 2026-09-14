@@ -1,8 +1,9 @@
 # Anexo. Procedimiento de respuesta a incidentes de privacidad
 
 > **Estado:** base operativa para completar con nombres, contactos, proveedores y criterio jurídico.  
-> **Alcance:** cuenta, datos funcionales, columnas cifradas con clave de aplicación, Vault, dispositivos, fotografías locales, proveedores, logs y backups.
-> **Nota sobre el estado actual:** hoy coexisten dos superficies de exposición muy distintas para el mismo contenido privado — columnas protegidas por una única clave de aplicación (`APP_KEY`), cuyo compromiso afecta a todas las cuentas a la vez, y ciphertext del Vault protegido por una VMK propia de cada usuario, cuyo compromiso afecta en principio a una sola cuenta. La clasificación inicial de cualquier incidente debe distinguir cuál de las dos superficies está implicada.
+> **Fecha de corte:** 2 de septiembre de 2026.
+> **Alcance:** cuenta, datos funcionales, Vault, dispositivos, fotografías locales, proveedores, logs, datos conservados tras la baja y backups.
+> **Modelo de lanzamiento:** el contenido privado del diario existe sólo en Vault E2EE; la clave de aplicación del backend cifra el teléfono y otros campos expresamente inventariados, no el email ni una segunda copia del contenido Vault.
 
 ## 1. Objetivos
 
@@ -18,9 +19,11 @@
 - acceso no autorizado a cuenta, API, base de datos, bucket o consola;
 - vulnerabilidad que permita leer o modificar datos de otra cuenta;
 - aparición de nombre, contacto, lugar, descripción o nota de cierre en logs, requests o reportes;
+- exposición de estados, fechas, ratings, asociaciones o secuencias relacionales de otra cuenta;
 - exposición de VMK, secretos de recuperación, tokens, URLs firmadas o claves administrativas;
 - pérdida, corrupción o borrado indebido de blobs;
 - restauración que reactive datos ya borrados;
+- acceso o reidentificación de filas conservadas después de una baja;
 - proveedor que notifique acceso, pérdida o transferencia no prevista;
 - dispositivo perdido o comprometido comunicado por un usuario;
 - fotografía local accesible fuera de los controles esperados;
@@ -144,11 +147,19 @@ No debe describirse el contenido como anónimo por estar cifrado ni afirmar que 
 
 ### Clave de aplicación (`APP_KEY`) comprometida
 
-- Este escenario es distinto y de mayor alcance que una exposición de Vault: `APP_KEY` descifra el nombre, contacto, redes, lugar, descripción y nota de cierre de **todas** las cuentas, no de una.
+- Este escenario es distinto de una exposición de Vault: en el modelo final `APP_KEY` cifra el teléfono y cualquier otro campo backend incluido expresamente, no el email ni el contenido privado del diario.
 - Confirmar de inmediato si la clave expuesta corresponde a producción y si permite descifrado retroactivo de backups o réplicas.
 - Rotar `APP_KEY` requiere re-cifrar todas las columnas afectadas antes de invalidar la clave anterior; planificar esa migración como parte de la preparación, no durante el incidente.
-- Cuantificar cuentas y terceras personas potencialmente afectadas antes de decidir si corresponde notificación general.
-- Evaluar si el nombre del crush, al estar en texto plano, ya estaba expuesto independientemente de esta clave.
+- Cuantificar cuentas y campos afectados; no asumir que E2EE del diario protege esos datos de cuenta.
+- Verificar que no existan columnas legacy de contenido Vault. Si aparecieran, el incidente también demuestra que el gate de lanzamiento falló y su alcance debe ampliarse.
+
+### Exposición de estructura relacional
+
+- identificar estados, fechas, ratings, rasgos, asociaciones, match status y correlaciones expuestos;
+- determinar si permiten inferir vida afectiva o sexual aunque no exista texto Vault;
+- incluir a terceras personas descritas al cuantificar afectados y consecuencias;
+- evaluar secuencias y combinaciones singulares que aumenten el riesgo de reidentificación;
+- tratar la exposición como incidente de datos personales aunque el Vault ciphertext permanezca seguro.
 
 ### Ciphertext sin claves conocidas
 
@@ -174,6 +185,15 @@ No debe describirse el contenido como anónimo por estar cifrado ni afirmar que 
 - conciliar API-DB, objetos y dispositivos;
 - documentar entradas irrecuperables y usuarios afectados.
 
+### Reidentificación de datos posteriores a la baja
+
+- aislar el dataset y suspender nuevas consultas o exportaciones;
+- identificar qué UUIDs, fechas, secuencias o tablas auxiliares permitieron volver a vincular personas;
+- determinar si el conjunto se declaró anónimo, seudónimo o agregado y qué controles se prometieron;
+- revisar accesos, receptores, copias y resultados derivados;
+- aplicar la evaluación de brecha a las personas usuarias y terceras personas afectadas;
+- corregir la estrategia de agregación, separación o supresión antes de reanudar el uso.
+
 ## 10. Escenario de dispositivo
 
 MDL puede revocar tokens o dispositivos remotos cuando recibe aviso, pero no garantiza borrar un dispositivo offline. Soporte debe indicar al usuario cómo:
@@ -194,6 +214,7 @@ El procedimiento no debe pedir al usuario que envíe su frase o contraseña de r
 - export probado de logs de API, base, objetos y proveedores;
 - contrato y canal urgente por proveedor;
 - simulación anual que incluya datos funcionales, ciphertext y secreto;
+- simulación de exposición de estructura relacional y reidentificación de datos conservados tras la baja;
 - borrador de notificación a autoridad y de comunicación a afectados;
 - verificación del plazo de detección y escalado;
 - seguimiento de acciones correctivas hasta evidencia de cierre.
@@ -208,6 +229,7 @@ El procedimiento no debe pedir al usuario que envíe su frase o contraseña de r
 6. ¿Qué información puede comunicarse por fases y cómo se documenta una demora?
 7. ¿Qué plazo de conservación corresponde al expediente de incidente y su evidencia?
 8. ¿Qué compromisos contractuales deben exigirse a cada proveedor?
+9. ¿Cómo se califica una reidentificación de datos que se habían presentado como anónimos?
+10. ¿Cómo deben considerarse y comunicarse los riesgos para terceras personas descritas que no tienen cuenta?
 
 Referencia: [RGPD, texto oficial en EUR-Lex](https://eur-lex.europa.eu/eli/reg/2016/679/oj?locale=es).
-

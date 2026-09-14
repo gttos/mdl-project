@@ -1,158 +1,178 @@
 # 3. Vault, almacenamiento y seguridad
 
-> **Estado:** actual, verificado el 5 de agosto de 2026. El Vault está activo pero es parcial y coexiste con columnas legacy legibles por el backend.
-> **Objetivo:** explicar qué puede leer cada sistema hoy y qué controles existen realmente, sin exigir conocimientos de criptografía o desarrollo.
+> Modelo objetivo de lanzamiento a 2 de septiembre de 2026. Se redacta con Vault E2EE terminado, sin columnas ni contratos funcionales legacy para contenido privado. No equivale a auditoría criptográfica, certificación ni evidencia de despliegue.
 
-## 1. Qué es el Vault hoy
+## 1. Garantía central
 
-El Vault es un sistema en construcción que cifra parte del contenido textual privado de MDL. Cuando está activo para una cuenta y una entrada ya fue migrada:
+iOS genera una VMK aleatoria de 32 bytes por Vault y cifra el contenido privado con AES-256-GCM antes de transferirlo. API y S3 conservan ciphertext, encapsulaciones y metadata necesarias, sin VMK en claro ni una operación de descifrado.
 
-- iOS crea y custodia la clave que permite abrirla (VMK);
-- iOS cifra esa entrada antes de enviarla;
-- la API autoriza al propietario y conserva metadata operativa;
-- el almacenamiento remoto conserva el paquete cifrado;
-- la lectura y composición de la pantalla ocurren en el dispositivo después del desbloqueo.
+En el modelo final, nombre/contacto/redes/cumpleaños del crush, lugar/descripción de experiencias y nota de cierre no se aceptan ni devuelven en rutas funcionales y no permanecen en columnas legacy.
 
-La API no ofrece una operación para descifrar blobs y no recibe la VMK en claro. **Esto es cierto únicamente para el contenido que pasó por el flujo del Vault.** El mismo contenido también existe, para toda cuenta que lo haya introducido por el formulario normal, en columnas funcionales que la API sí puede descifrar con una clave propia de aplicación — ver el [inventario maestro](02_MDL_Inventario_Maestro_Datos.md).
+Una exposición aislada de RDS/S3 no debería revelar ese plaintext sin acceso adicional a la VMK o a material suficiente de recovery. Esta frase describe el límite arquitectónico; la evaluación real de un incidente debe considerar configuración, claves, dispositivo, encapsulaciones, secreto elegido y posibilidad de combinar fuentes.
 
-## 2. Qué entra en el Vault hoy
+## 2. Qué protege y qué no
 
-| Tipo de entrada | Contenido principal | Blob type usado hoy |
-|---|---|---|
-| Crush | Nombre, profesión, contacto, redes y fecha de nacimiento | `text` |
-| Experiencia | Lugar y descripción | `text` |
-| Relación | Nota de cierre | `text` |
-
-El schema de la API admite blobs `text`, `image` y `video`, pero la cola activa de iOS solo crea blobs `text`. No hay fotos ni ningún otro archivo en el Vault hoy.
-
-Las fechas, estados, clasificaciones y valoraciones necesarias para operar el producto permanecen en la base funcional y son legibles por la API, cifradas o no según el campo.
-
-## 3. Flujo de escritura hoy
-
-1. El usuario introduce o modifica contenido en un único formulario de iOS.
-2. Ese formulario envía a la API, en el mismo request, tanto los campos funcionales como el contenido de contacto/lugar/descripción/nota.
-3. La API persiste ese contenido en columnas funcionales, cifrándolo con la clave de aplicación cuando corresponde.
-4. Si el usuario tiene el Vault activo, la app además cifra una copia del mismo contenido con la VMK.
-5. La app registra en la API metadata técnica y un ID remoto aleatorio para esa copia.
-6. La API comprueba que la cuenta es propietaria del Vault y entrega una URL temporal (15 minutos).
-7. iOS sube el ciphertext directamente al almacenamiento de objetos.
-
-**Los endpoints funcionales sí transportan hoy los campos privados**: nombre, contacto, redes, lugar, descripción y nota de cierre viajan por HTTP en el mismo request que los datos funcionales, con o sin Vault activo.
-
-## 4. Flujo de lectura y recuperación
-
-1. iOS obtiene desde la API la estructura funcional, que ya incluye el contenido de las columnas cifradas con clave de aplicación descifrado.
-2. Si la entrada también existe en el Vault, iOS puede descargar el ciphertext del almacenamiento remoto y descifrarlo localmente con la VMK.
-3. La recuperación del Vault agrupa las entradas por `crushId`: cuando un mismo crush tiene varias experiencias o relaciones, la lógica actual conserva solo la de mayor secuencia y **solicita el borrado remoto de las demás**. Esto puede eliminar entradas válidas del Vault durante una recuperación.
-
-## 5. Claves y recuperación
-
-### 5.1 Clave principal (VMK)
-
-- La VMK es aleatoria y tiene 32 bytes.
-- Se guarda en Keychain con `WhenUnlockedThisDeviceOnly` y biometría en dispositivo físico.
-- En memoria solo permanece durante las operaciones que la necesitan.
-
-### 5.2 Encapsulación
-
-La VMK se protege con material derivado de un secreto de recuperación mediante Argon2id (65.536 KiB de memoria, 3 iteraciones, paralelismo 4). La API conserva la VMK encapsulada, nunca la VMK en claro.
-
-### 5.3 Métodos de recuperación
-
-| Método | Estado hoy |
+| Protegido por E2EE | No protegido por E2EE |
 |---|---|
-| Contraseña de recuperación | Funcional: la app descarga la encapsulación por contraseña desde `GET /api/vault` y reconstruye la VMK localmente. |
-| Frase de 24 palabras | La encapsulación mnemónica que la app genera en el alta **históricamente no se persistía** al llegar a `POST /api/vault/init`. El código ya incorpora una tabla y endpoints dedicados (`GET`/`PUT /vault/encapsulation/mnemonic`) y una lectura real desde iOS, pero **todavía no se validó de punta a punta con build y prueba manual en dispositivo**. Hasta esa validación, no debe asumirse que este método reconstruye el mismo Vault que la contraseña en un dispositivo nuevo. |
-| Transferencia QR | ECDH P-256 entre dispositivos y descarga posterior de blobs. |
+| nombre, contacto, redes y cumpleaños del crush | email/teléfono y perfil de la cuenta |
+| lugar y descripción de experiencias | IDs, fechas, estados, ratings, rasgos y asociaciones |
+| nota de cierre y notas seguras | match status, estadísticas y metadata Vault |
+| snapshots e intenciones privadas cifradas | IP, user agent, rutas, trazas y eventos de seguridad |
+| objeto S3 frente a lectura sin clave | fotos locales, salvo controles propios del dispositivo |
 
-El material mostrado al usuario debe tratarse como un secreto. MDL debe explicar que una persona con acceso a ese secreto y a la cuenta podría recuperar el contenido del Vault, y que la pérdida de todos los mecanismos puede volverlo irrecuperable — sin afectar el contenido que además existe en las columnas funcionales, que sigue siendo accesible por el backend independientemente del estado del Vault.
+E2EE no protege un dispositivo desbloqueado comprometido, capturas del usuario, instrumentación insegura, secretos de recovery expuestos o un atacante que controle simultáneamente los extremos relevantes.
 
-## 6. Metadata que sigue siendo visible
+## 3. Claves y recuperación
 
-Aunque el contenido del Vault esté cifrado, API, base de datos y almacenamiento remoto pueden conocer: ID de cuenta, Vault y blob; tamaño, hash y versión criptográfica; secuencia y fechas; ruta y proveedor de almacenamiento; cantidad de blobs y frecuencia de uso; dispositivos autorizados; existencia de material de recuperación; IP, user agent, rutas y eventos de seguridad asociados.
+### 3.1 VMK y custodia local
 
-## 7. Almacenamiento por capa
+- Una VMK se genera por Vault en iOS.
+- El material local se namespacea por cuenta/Vault y se guarda bajo controles de Keychain.
+- Cambiar de cuenta o namespace no reutiliza una VMK residual.
+- La VMK sólo existe en plaintext durante operaciones autorizadas del dispositivo.
 
-| Capa | Datos | Control principal | Riesgo residual hoy |
+### 3.2 Métodos de recovery
+
+- **Contraseña de recovery:** deriva una clave mediante Argon2id con el perfil interoperable aprobado.
+- **Frase de 24 palabras:** usa una encapsulación independiente con PBKDF2-SHA512.
+- Ambos mecanismos recuperan la misma VMK y el mismo inventario.
+- La infraestructura QR/recovery-key no se ofrece como tercer método normal de beta.
+
+La contraseña/frase es un secreto de alto impacto. El soporte nunca debe pedirla ni recibirla. Quien combine acceso a la cuenta y material de recovery suficiente podría descifrar el Vault. Perder todos los mecanismos puede volver irrecuperable el contenido.
+
+## 4. Unidad de cifrado y versionado
+
+- Un blob `text` contiene el snapshot privado completo de un crush, experiencia o relación.
+- La identidad lógica es `(entryType, entityId, revision)`; `crushId` sólo asocia.
+- Editar conserva tipo e ID e incrementa la revisión.
+- La revisión nueva se sube, descarga/verifica y confirma antes de retirar la anterior.
+- La coexistencia temporal no es un historial de versiones disponible para el usuario.
+- Un conflicto o inventario ambiguo falla cerrado.
+
+No existe un índice local persistente de plaintext. La búsqueda privada se realiza en memoria sobre contenido ya descifrado y el término no se envía a API.
+
+## 5. Binding opaco
+
+iOS deriva un `lookup_token` estable por entidad mediante HMAC-SHA-256 con la VMK, tipo e ID funcional. API no puede generarlo o invertirlo.
+
+API conserva un binding único e inmutable por `(vault, entryType, entityId)` y exige token coincidente al registrar blobs. El binding permite seleccionar todas las revisiones de una entidad durante borrado sin descargar, descifrar o recorrer el Vault completo.
+
+El token sigue siendo metadata sensible y no debe aparecer en logs, errores, analítica o interfaces de soporte.
+
+## 6. Sincronización y recovery
+
+### 6.1 Escritura
+
+1. iOS valida el formulario y congela identidad/fecha.
+2. Cifra y persiste localmente snapshot e intención durable.
+3. API materializa la entidad y binding dentro de la transacción funcional.
+4. API registra metadata y emite una URL firmada temporal.
+5. iOS sube ciphertext directamente a S3.
+6. iOS verifica existencia/longitud y confirma la revisión.
+7. Sólo entonces retira la revisión sustituida y comunica sincronización verificada.
+
+Un retry reutiliza UUID, token, snapshot y operación. Un timeout ambiguo se reconcilia; no se finge descarte local si API pudo aceptar.
+
+### 6.2 Recovery
+
+Recovery pagina el inventario completo, descarga y descifra localmente, agrupa por identidad, selecciona una revisión inequívoca y publica el conjunto sólo después de validarlo entero. No ejecuta borrados remotos.
+
+La beta usa un dispositivo activo por Vault. Después de recovery, el dispositivo anterior no debe seguir editando como copia activa. No existe sincronización incremental ni resolución de conflictos entre dos dispositivos activos.
+
+## 7. Borrado y retención
+
+### 7.1 Experiencia o relación
+
+1. iOS persiste la intención de borrado.
+2. Emite una única petición funcional.
+3. API resuelve el binding bajo lock y soft-deletea entidad y blobs dentro de la transacción.
+4. iOS limpia entries locales sólo después de confirmación.
+5. La purga programada destruye objeto y metadata elegible después de siete días.
+
+El éxito visible significa borrado funcional confirmado, no destrucción física instantánea.
+
+### 7.2 Crush
+
+El borrado coordina crush, experiencias, relaciones, bindings, todas las revisiones remotas, entries/notas locales e imágenes bajo `LocalMedia/{crushId}`. No debe sobrevivir una carpeta de fotos o blob activo sin entidad.
+
+### 7.3 Cuenta
+
+`DELETE /users` coordina, como una única operación atómica y fail-closed, cuenta, sesiones, estructura, Vault y fotos: sólo responde éxito cuando el estado remoto queda coherente, y cualquier fallo revierte por completo. Los blobs entran en soft-delete inmediato y siguen la misma ventana de purga a siete días que el borrado dirigido (§7.1); los bindings se conservan sólo hasta completar esa purga. Encapsulaciones, devices y recovery keys se invalidan/eliminan de inmediato. iOS elimina Keychain, SQLite, preferencias sensibles y fotos locales sólo después de confirmar el éxito remoto. La estructura que se pretenda conservar para estadísticas se trata según la estrategia aprobada; no se llama anónima por mera sustitución de identificadores directos.
+
+No existe una operación de reset de Vault independiente de la baja: recovery por contraseña o por frase de 24 palabras es el único mecanismo para recuperar acceso manteniendo la cuenta.
+
+### 7.4 Backups y restauraciones
+
+La ventana de siete días no describe por sí sola RDS snapshots, versionado S3, backups del dispositivo o copias de proveedores. La política debe indicar:
+
+- qué backups existen y por cuánto tiempo;
+- si un objeto borrado conserva versiones;
+- cómo se impide que una restauración reactive datos ya borrados;
+- cuándo deja de ser recuperable cada categoría;
+- qué excepciones legales pueden suspender una purga.
+
+## 8. Almacenamiento por capa
+
+| Capa | Contenido | Control principal | Riesgo que debe gestionarse |
 |---|---|---|---|
-| Keychain iOS | VMK y clave privada del dispositivo | Controles de acceso del sistema, desbloqueo y biometría | Dispositivo comprometido o sesión desbloqueada |
-| SQLite iOS | Ciphertext del Vault, nonce, tag, cola, **y el índice `vault_search_index` en texto plano** | Sandbox y protección de archivos | El índice de búsqueda es texto plano por diseño actual, no por bug de logging: cualquiera con acceso forense al archivo lee nombre, profesión, lugar, descripción y nota de cierre sin necesitar la VMK |
-| Memoria iOS | Contenido descifrado, búsqueda | Sesión Vault | Puede aparecer en logs locales (`LegacyMigrationOrchestrator`, `CrushViewModel`) |
-| API-DB | Cuenta, estructura funcional, columnas cifradas con clave de aplicación, encapsulaciones y metadata del Vault | Autorización por propietario, roles y cifrado de transporte | Una `APP_KEY` comprometida descifra el contenido de contacto, lugar, descripción y nota de cierre de **todas** las cuentas, no de una sola |
-| Almacenamiento de objetos (S3) | Ciphertext y metadata del objeto (solo entradas migradas) | Cifrado autenticado de cliente, permisos y URL temporal | Exposición de metadata, borrado incompleto |
-| Logs/Sentry | Eventos técnicos | Minimización nominal | No confirmado que excluya el contenido descrito en la sección 3 |
+| Memoria iOS | plaintext y VMK durante sesión | App Lock, ciclo de vida y aislamiento | dispositivo desbloqueado, crash dump o logging |
+| Keychain | VMK/material local | protección del dispositivo y namespace | supervivencia a reinstalación, acceso físico |
+| SQLite iOS | ciphertext, metadata e intenciones | AES-GCM, namespace y file protection | backup/restauración y corrupción |
+| API/RDS | cuenta, estructura, encapsulaciones, bindings y metadata | auth, ownership, TLS, storage controls y cifrado de campos seleccionados | inferencias, personal autorizado, email legible y exposición de `APP_KEY` |
+| S3 Vault | ciphertext | bucket privado, URL firmada y lifecycle | exposición de objetos/metadata, versión y purga |
+| Fotos locales | imágenes saneadas | sandbox, file protection y exclusión de backup | pérdida/robo del dispositivo y borrado |
+| Observabilidad | trazas y contexto técnico | allowlist/scrubbing/acceso | fuga accidental de payload o identificadores |
 
-## 8. Búsqueda privada
+## 9. Amenazas relevantes
 
-La lista puede buscarse por nombre. El término de búsqueda no se envía a la API. Pero, a diferencia de lo que un modelo E2EE estricto requeriría, **sí existe un índice persistente en texto plano** (`vault_search_index`, FTS5) con nombre, profesión, lugar, descripción y nota de cierre. Borrar una nota localmente no siempre elimina la fila correspondiente de ese índice.
+| Amenaza | Consecuencia | Salvaguarda o respuesta |
+|---|---|---|
+| takeover de cuenta sin secreto Vault | acceso a estructura/metadata; posible intento de recovery | MFA/protecciones futuras, rate limits, revocación y alertas |
+| dispositivo desbloqueado comprometido | acceso potencial a plaintext y fotos | App Lock, Keychain, file protection, revocación y guía de dispositivo |
+| secreto de recovery expuesto | descifrado potencial del Vault afectado | educación, no solicitar secreto, respuesta/rotación diseñada |
+| RDS expuesto | cuenta, estructura, inferencias, metadata y encapsulaciones | cifrado de storage, mínimo privilegio, segmentación, auditoría |
+| S3/ciphertext expuesto | copia de contenido cifrado y patrones de metadata | bucket privado, URLs cortas, AES-GCM, evaluación combinada |
+| `APP_KEY` de backend expuesta | teléfono y cualquier otro campo cifrado expresamente con esa clave; el email ya es legible para backend | inventario exacto y rotación/re-cifrado planificado; Vault usa VMK separadas |
+| fallo de ownership | acceso cruzado entre cuentas | policies, scoping, tests y fallo cerrado |
+| logs/Sentry con payload | exposición de contenido o secretos | allowlist, scrubbing, tests y monitorización |
+| restauración de backup | reaparición de datos borrados | inventario, procedimiento de restauración y repurga |
+| dos dispositivos activos | conflicto, revisión perdida o estado divergente | restricción de beta y sustitución explícita |
 
-## 9. Versionado, sustitución y borrado
+## 10. Controles que deben existir en el cierre
 
-Cada nueva versión del Vault usa un ID remoto aleatorio distinto del ID funcional, y una versión anterior permanece disponible hasta confirmar que la nueva existe remotamente — con dos excepciones activas hoy:
+- namespace por cuenta y no adopción de VMK residual;
+- cifrado autenticado y VMK fuera del backend;
+- endpoints funcionales sin campos privados en claro;
+- columnas legacy vaciadas y retiradas mediante gates con backup/rollback;
+- binding obligatorio y ownership por entidad;
+- retry idempotente y rollback transaccional;
+- recovery completo, atómico y no destructivo;
+- borrado dirigido y borrado integral de crush/cuenta;
+- exclusión de secretos y contenido de logs/errores/analítica;
+- fotos saneadas, protegidas, excluidas de backup y borradas coordinadamente;
+- lifecycle/purga operativa y evidencia de backups/versiones;
+- acceso de personal por mínimo privilegio, MFA y trazabilidad;
+- revisión del threat model y procedimiento de incidentes.
 
-- **Retry de URL expirada roto:** si la URL de subida expira, iOS reintenta esperando un `blobId` que la API no devuelve, y recibe en cambio una ruta temporal (`blobs/temp/...`) que no actualiza el objeto ya registrado.
-- **Recovery agrupa y borra:** como se describe en la sección 4, la recuperación puede solicitar el borrado de entradas válidas de un mismo crush.
+## 11. Evidencia previa a publicar garantías
 
-Al borrar un crush, iOS intenta borrar cada blob remoto y continúa si falla, luego elimina entradas y notas locales, y pide a la API el borrado del crush funcional. **La carpeta local de fotografías no se elimina en este flujo.**
+- versión exacta de app/API y migrations aplicadas;
+- inventario que demuestre ausencia de campos privados en contratos y columnas funcionales;
+- tests y prueba física de alta, edición, recovery por ambos métodos y borrados;
+- prueba de aislamiento entre dos cuentas y fallo cerrado de binding;
+- captura saneada de purga a siete días, S3 lifecycle/versionado y RDS backups;
+- prueba de exclusión de backup y borrado de fotos/Keychain/SQLite;
+- configuración efectiva de TLS, cifrado de storage, buckets, IAM, Sentry y logs;
+- inventario de dispositivos y procedimiento de revocación/sustitución;
+- ejercicio de restauración que no reactive datos borrados;
+- revisión independiente proporcional del diseño y de las implementaciones criptográficas;
+- EIPD/screening y aprobación jurídica del lenguaje público.
 
-## 10. Fotografías locales
+## 12. Preguntas para asesoría
 
-- se seleccionan en el dispositivo;
-- se decodifican y re-codifican sin conservar metadata EXIF, GPS o IPTC;
-- se guardan con nombre aleatorio dentro de la carpeta local del crush;
-- **no se excluyen del backup general del sistema operativo** (no se aplica `NSURLIsExcludedFromBackupKey`);
-- no se envían a la API ni al almacenamiento remoto de MDL;
-- no se cifran con la VMK;
-- se eliminan solo por borrado individual manual; **no se eliminan al borrar el crush completo**.
-
-## 11. Proveedores y fronteras
-
-Ver la tabla verificada de proveedores en el [inventario maestro](02_MDL_Inventario_Maestro_Datos.md#12-proveedores-y-datos-recibidos). Dos hallazgos relevantes para seguridad:
-
-- **Dos SDK de identidad activos en paralelo:** Firebase Auth y AWS Amplify con plugin Cognito Auth están ambos configurados en `AppDelegate`. No hay evidencia en este expediente de que ambos sean necesarios; deben revisarse antes de producción.
-- **Plugin de almacenamiento de Amplify activo** junto al flujo de subida directa a S3 por URL firmada que usa el Vault; debe confirmarse qué datos, si alguno, pasan por ese canal.
-
-## 12. Controles de seguridad verificados hoy
-
-### Dispositivo
-
-- Keychain con accesibilidad restringida y biometría para la VMK.
-- Re-codificación de imágenes sin EXIF/GPS/IPTC.
-- **Pendiente:** confirmación de que ninguna ruta persiste plaintext privado, términos de búsqueda o claves fuera del índice FTS5 ya identificado.
-
-### API
-
-- Autenticación Sanctum, autorización por propietario en recursos del Vault.
-- URLs firmadas de 15 minutos para blobs.
-- Rate limiting configurado por ruta (ver rutas `throttle:` en `/api/vault`).
-- **Pendiente:** confirmación de que Sentry y los logs de aplicación excluyen los campos cifrados con clave de aplicación y el contenido en tránsito descrito en la sección 3.
-
-### Infraestructura
-
-- Cifrado en tránsito (HTTPS).
-- Cifrado del proveedor en reposo (RDS, S3) como capa adicional a la aplicación.
-- **Pendiente:** inventario de subencargados, procedimiento de incidentes documentado y ensayado, rotación de `APP_KEY`.
-
-## 13. Riesgos que el estado actual no elimina
-
-- La estructura funcional y las valoraciones son legibles por la API.
-- El nombre del crush es legible por la API sin necesidad de descifrar nada.
-- El resto del contenido de contacto, lugar, descripción y nota de cierre es descifrable por la API con una única `APP_KEY`; comprometer esa clave expone el contenido de todas las cuentas, no de una.
-- El índice de búsqueda local guarda ese mismo contenido en texto plano en el dispositivo.
-- La recuperación del Vault puede borrar entradas válidas de un mismo crush.
-- La recuperación por frase de 24 palabras no está validada de punta a punta.
-- Un bug de retry puede dejar un blob sin actualizar correctamente tras una URL expirada.
-- Las fotografías dependen únicamente de controles locales, no se excluyen del backup del sistema y no se eliminan con el crush.
-- Los datos sobre terceras personas plantean riesgos incluso cuando el contenido está cifrado.
-
-## 14. Evidencia previa a producción
-
-- decisión y fecha sobre si el nombre del crush se cifra antes de recibir tráfico real;
-- validación de la recuperación por frase de 24 palabras en dispositivo limpio;
-- corrección o mitigación documentada del bug de agrupación en recovery antes de que un usuario real lo dispare;
-- confirmación de scrubbing de Sentry y logs de aplicación para los campos identificados;
-- confirmación de qué SDK de identidad (Firebase, Amplify/Cognito) es el que realmente se usa en producción;
-- inspección de `vault_search_index` en un dispositivo de prueba para confirmar el contenido en claro descrito acá;
-- plan y fecha para retirar las columnas cifradas con clave de aplicación una vez el Vault esté completo.
-
-Las cuestiones jurídicas y las medidas de reducción de riesgo a valorar están en la [guía de auditoría](05_MDL_Auditoria_Juridica.md).
+1. ¿Qué afirmaciones exactas sobre E2EE y acceso del proveedor son admisibles?
+2. ¿Cómo debe informarse la pérdida irreversible si el usuario pierde todos los mecanismos de recovery?
+3. ¿Qué retención/backups son proporcionales para ciphertext, metadata, bindings y eventos?
+4. ¿Qué controles deben exigirse al dispositivo y qué responsabilidad puede atribuirse al usuario?
+5. ¿Qué nivel de revisión independiente o prueba de penetración se espera antes del lanzamiento?
+6. ¿Cómo se articula portabilidad y acceso cuando backend no puede descifrar?

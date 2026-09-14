@@ -1,181 +1,204 @@
 # 2. Inventario maestro de datos
 
-> **Estado:** actual, verificado contra el código de `api/` e `ios/` el 5 de agosto de 2026.
-> **Objetivo:** identificar, entidad por entidad, qué información existe hoy, para qué se usa, dónde se guarda, quién puede leerla y cómo se elimina.
-> **Criterio:** las calificaciones jurídicas quedan abiertas para la asesoría.
+> Inventario técnico del modelo objetivo de lanzamiento, actualizado a 2 de septiembre de 2026. No asigna bases jurídicas ni convierte la retención técnica en un plazo aprobado.
 
 ## 1. Leyenda de ubicaciones
 
-| Código | Ubicación | Visibilidad |
+| Ubicación | Contenido | Visibilidad |
 |---|---|---|
-| API-DB texto plano | Base relacional del backend, columna sin cifrar | Legible directamente por la aplicación servidor y por cualquiera con acceso a la base |
-| API-DB cifrado (clave app) | Base relacional del backend, columna cifrada con `Crypt::encryptString` bajo la `APP_KEY` de Laravel | La aplicación servidor descifra automáticamente al leer la columna (mutator de Eloquent); una única clave protege el contenido de todas las cuentas |
-| Vault-local | Base local del Vault en iOS (`Documents/vault.sqlite3`) | Ciphertext persistente con VMK; plaintext únicamente durante uso desbloqueado |
-| Vault-remoto | Metadata en API-DB y ciphertext en almacenamiento de objetos (S3) | Metadata legible; contenido privado no legible sin la VMK del usuario |
-| Índice local en claro | `vault_search_index` (FTS5) dentro de `vault.sqlite3` | Texto en claro, legible por cualquiera con acceso al archivo del dispositivo |
-| Keychain | Almacén seguro del sistema iOS | Material criptográfico sujeto a controles del dispositivo |
-| Solo local | Contenedor de la app en el dispositivo | No se transmite a MDL |
-| Memoria | Memoria de ejecución de iOS o API | Temporal; debe descartarse al terminar la operación |
-| Proveedor | Servicio externo necesario para una función | Depende del contrato y de la configuración real |
+| API/RDS | cuenta, estructura funcional, eventos y metadata Vault | legible por la aplicación backend y personal autorizado según rol |
+| S3 Vault | objetos ciphertext | no legible sin la VMK del usuario |
+| SQLite iOS | ciphertext, metadata e intenciones durables | no legible sin VMK; sin índice privado persistente en claro |
+| Keychain iOS | VMK y material local | protegido por controles del dispositivo |
+| Sandbox local | fotos saneadas | legible en el dispositivo; no transmitido a MDL en beta |
+| Memoria iOS | contenido descifrado durante uso | temporal en sesión desbloqueada |
+| Proveedor | email, infraestructura u observabilidad | según servicio, contrato y configuración |
 
-El ciphertext, las columnas cifradas con clave de aplicación y los identificadores se consideran vinculados a una cuenta. Ningún mecanismo actual anonimiza el conjunto.
+Ciphertext, identificadores opacos y estructura vinculada a una cuenta siguen siendo datos tratados por MDL; cifrado no equivale a anonimización.
 
 ## 2. Cuenta, perfil y autenticación
 
-| Datos o campos | Persona | Origen y finalidad de producto | Ubicación y lectura | Protección | Conservación y borrado |
-|---|---|---|---|---|---|
-| ID interno de usuario | Usuario | Generado por MDL; relaciona todos los datos de la cuenta | API-DB texto plano | UUID, autorización por titular, HTTPS | Mientras la cuenta esté activa |
-| Nombre completo y email | Usuario | Introducidos por el usuario; identificación, acceso, recuperación y soporte | API-DB texto plano; email también llega a Google (si usa OAuth) y a Sentry como identificador de contexto | HTTPS en tránsito | Hasta baja o plazo justificado |
-| Teléfono | Usuario | Introducido por el usuario | API-DB cifrado (clave app) | `Crypt::encryptString` con `APP_KEY`; HTTPS en tránsito | Hasta actualización o baja |
-| País, género, fecha de nacimiento y edad | Usuario | Introducidos o calculados; elegibilidad, personalización y métricas | API-DB texto plano | Control de acceso y HTTPS | Hasta actualización o baja |
-| Plan, estado de tutorial, fecha de alta, actualización, último acceso e inactividad | Usuario | Generados por uso; habilitar funciones y operar la cuenta | API-DB texto plano | Control de acceso | Según vida de cuenta y plazos operativos |
-| Password | Usuario | Introducida para autenticación | API-DB como hash (bcrypt); el valor original no se conserva | Hash de password; transporte HTTPS | Se sustituye al cambiarla; se elimina con la cuenta física |
-| Token de acceso (Sanctum) y artefactos de sesión | Usuario/dispositivo | Generados para autenticar | API-DB (hash del token) y Keychain de iOS | Expiración a 30 días, revocación al cerrar sesión | `sanctum:prune-expired` corre diariamente |
-| Código de un solo uso (OTP), hash, expiración, intentos | Usuario | Generados para recuperación de contraseña | API-DB; el código se guarda como hash | Límites de intento, cooldown progresivo (60s/300s/3600s), bloqueo tras 5 intentos | Purgado 24 horas después de expirar |
-| Verificación de email, IP, user agent, trace ID, resultado y motivo de autenticación | Usuario/dispositivo | Generados por seguridad y diagnóstico | API-DB (`AuthEvent`), Sentry | Acceso restringido | 90 días en la regla técnica documentada; a confirmar contra el comando de purga real |
-| Identificador federado de Google (`google_id`) | Usuario | Registro/login vía Google OAuth | API-DB texto plano | Consentimiento del usuario al pulsar "Continuar con Google" | Se conserva al anonimizar la cuenta según la lógica de negocio actual; a confirmar con ingeniería |
-
-### Derechos y exportación
-
-Los datos de cuenta son localizables por ID o email desde el backend. **No existe hoy un endpoint de exportación de datos personales del usuario.** El flujo de baja debe tratar también sesiones, proveedores y copias locales. Los detalles están en el [ciclo de vida](04_MDL_Ciclo_Vida_Retencion_Derechos.md).
-
-## 3. Crush: datos en columnas funcionales de la API
-
-| Datos o campos | Persona | Finalidad de producto | Ubicación y lectura | Protección | Conservación y borrado |
-|---|---|---|---|---|---|
-| ID del crush, ID de usuario, correlation ID | Usuario y tercera persona | Propiedad, idempotencia y relaciones | API-DB texto plano | Autorización por propietario, UUID y HTTPS | Vida de la entidad; soft delete |
-| **Nombre** | Tercera persona | Identificar la ficha para el usuario | **API-DB texto plano — sin cifrar** | Solo control de acceso y HTTPS | Vida de la entidad; soft delete |
-| Edad, país, género | Tercera persona | Filtros, presentación y métricas | API-DB texto plano | Control de acceso | Hasta edición o borrado |
-| Fecha en que se conocieron (`met_at`) | Usuario y tercera persona | Timeline y métricas temporales | API-DB texto plano | Control de acceso | Vida de la entidad |
-| Estado actual, estado de match, archivado | Usuario y tercera persona | Gestionar el ciclo relacional, listas y estadísticas | API-DB texto plano | Control de acceso | Vida de la entidad |
-| Categoría afectiva subjetiva ("Ducky") | Usuario y tercera persona | Clasificación personal y métricas | API-DB texto plano | Control de acceso | Vida de la entidad |
-| Altura, color de ojos y pelo, tipo corporal, color de piel | Tercera persona | Descripción estructurada, filtros y métricas | API-DB texto plano | Control de acceso | Vida de la entidad |
-| Signo zodiacal (derivado), características seleccionadas | Tercera persona y opinión del usuario | Descripción y métricas | API-DB texto plano | Control de acceso | Vida de la entidad |
-| Valoraciones de belleza, conexión emocional, personalidad, atracción sexual y valoración global (promedio) | Tercera persona y opinión del usuario | Reflexión personal, ordenación y métricas | API-DB texto plano | Control de acceso | Vida de la entidad |
-| Email | Tercera persona | Contacto | API-DB cifrado (clave app) | `Crypt::encryptString` | Vida de la entidad |
-| Prefijo y número de WhatsApp | Tercera persona | Contacto | API-DB cifrado (clave app) | `Crypt::encryptString` | Vida de la entidad |
-| Instagram, Facebook, Snapchat, TikTok | Tercera persona | Contacto | API-DB cifrado (clave app) | `Crypt::encryptString` | Vida de la entidad |
-| Fechas de creación, edición, última actividad y borrado | Usuario/dispositivo | Orden, sincronización, soporte y ciclo de vida | API-DB texto plano | Control de acceso | Según entidad |
-
-### Copia adicional en el Vault (solo entradas migradas)
-
-Cuando el usuario tiene el Vault activo y la entrada ya fue migrada, iOS mantiene además una copia cifrada con VMK del nombre, profesión, contacto, redes y fecha de nacimiento en `Vault-local`/`Vault-remoto`, y una copia en texto plano de nombre y profesión en el **índice local en claro** (FTS5) para búsqueda. Esta copia no reemplaza a las columnas de la sección anterior: el backend sigue teniendo acceso a la versión funcional.
-
-Los endpoints funcionales de creación y edición de crush sí reciben hoy el nombre, contacto, redes y fecha de nacimiento —no están excluidos del transporte HTTP ni de la persistencia funcional—.
-
-## 4. Experiencia
-
-| Datos o campos | Persona | Finalidad de producto | Ubicación y lectura | Protección | Conservación y borrado |
-|---|---|---|---|---|---|
-| ID de experiencia, ID de usuario, ID de crush, correlation ID | Usuario y tercera persona | Propiedad, asociación e idempotencia | API-DB texto plano | Autorización por propietario | Vida de la experiencia; soft delete |
-| Fecha | Usuario y tercera persona | Timeline, orden y métricas | API-DB texto plano | Control de acceso | Igual que la experiencia |
-| Nivel de satisfacción | Usuario y opinión sobre la experiencia | Presentación y métricas | API-DB texto plano | Control de acceso | Igual que la experiencia |
-| Lugar | Usuario y tercera persona | Contexto del evento | API-DB cifrado (clave app), normalizado en minúsculas | `Crypt::encryptString` | Igual que la experiencia |
-| Descripción | Usuario y tercera persona | Relato del evento | API-DB cifrado (clave app) | `Crypt::encryptString` | Igual que la experiencia |
-
-Cuando el Vault está activo y la entrada fue migrada, existe además una copia de lugar y descripción cifrada con VMK en Vault-local/remoto, y una copia en texto plano en el índice local en claro. Los formularios de experiencia envían lugar y descripción por HTTP en el mismo request que los campos funcionales.
-
-## 5. Relación
-
-| Datos o campos | Persona | Finalidad de producto | Ubicación y lectura | Protección | Conservación y borrado |
-|---|---|---|---|---|---|
-| ID de relación, ID de usuario, ID de crush, correlation ID | Usuario y tercera persona | Propiedad, asociación e idempotencia | API-DB texto plano | Autorización por propietario | Vida de la relación; soft delete |
-| Estado, estado de match, fecha de inicio y fecha de fin | Usuario y tercera persona | Historial, timeline y métricas | API-DB texto plano | Control de acceso | Igual que la relación |
-| ID de experiencia asociada | Usuario y tercera persona | Vincular el evento que origina o actualiza una relación | API-DB texto plano | Control de acceso | Igual que la relación |
-| Nota de cierre | Usuario y tercera persona | Registrar cómo terminó la relación | API-DB cifrado (clave app) | `Crypt::encryptString` | Igual que la relación |
-
-Cuando el Vault está activo y la entrada fue migrada, existe además una copia de la nota de cierre cifrada con VMK en Vault-local/remoto, y una copia en texto plano en el índice local en claro. Los formularios de relación envían la nota de cierre por HTTP en el mismo request que los campos funcionales.
-
-## 6. Fotografías del crush
-
-| Datos | Persona | Finalidad | Ubicación y lectura | Protección | Conservación y borrado |
-|---|---|---|---|---|---|
-| Imagen elegida por el usuario | Principalmente tercera persona | Galería privada de la ficha | Solo local, `Documents/LocalMedia/<crushId>/` | Sandbox de iOS; sin cifrado con VMK; sin exclusión de backup del sistema operativo | Hasta borrado individual manual; **no se elimina automáticamente al borrar el crush** |
-| Archivo re-codificado y nombre aleatorio | Tercera persona | Reducir metadata innecesaria | Solo local | Re-codificación sin EXIF/GPS/IPTC | Igual que la imagen |
-
-MDL no recibe las fotografías, no crea metadata remota sobre ellas y no puede recuperarlas desde el servidor. El código no marca `NSURLIsExcludedFromBackupKey`, por lo que estas fotos pueden quedar incluidas en un backup del sistema operativo del dispositivo (iCloud/iTunes) según la configuración del usuario. Al borrar un crush completo, la carpeta local de sus fotos permanece en el dispositivo.
-
-## 7. Vault: claves, blobs y dispositivos (solo entradas migradas)
-
-| Datos o campos | Persona | Finalidad | Ubicación y lectura | Protección | Conservación y borrado |
-|---|---|---|---|---|---|
-| ID del Vault, ID de usuario, versión criptográfica y estado | Usuario | Asociar y operar el Vault | API-DB texto plano | Autorización por titular | Vida del Vault |
-| Algoritmo y parámetros de derivación (Argon2id), salt, VMK encapsulada, nonce y tag | Usuario | Desbloqueo y recuperación sin entregar la VMK en claro | API-DB; material técnico legible pero VMK no legible | Argon2id (65.536 KiB, 3 iteraciones, paralelismo 4) y cifrado autenticado | Vida de la encapsulación |
-| VMK de 32 bytes | Usuario | Cifrar y descifrar el contenido del Vault | Keychain y memoria durante uso | `WhenUnlockedThisDeviceOnly` + biometría en dispositivo físico | Hasta limpieza del Vault/cuenta/dispositivo |
-| Encapsulación por frase de 24 palabras | Usuario | Recuperación alternativa | Generada en iOS; **el endpoint `POST /api/vault/init` históricamente no la persistía** — corregido en código con una tabla y endpoints dedicados (`GET`/`PUT /vault/encapsulation/mnemonic`), pendiente de validación end-to-end en dispositivo | Cifrado autenticado | Vida de la encapsulación |
-| ID aleatorio del blob, propietario, longitud, hash, ruta, secuencia y timestamps | Usuario y personas descritas | Integridad, versionado y sincronización | API-DB; metadata legible | Autorización por titular y URLs firmadas | Soft delete y purga tras 7 días (`vault:purge-blobs`, diario) |
-| Ciphertext del blob (solo tipo `text` en uso activo) | Usuario y personas descritas | Copia remota cifrada del contenido ya migrado al Vault | Almacenamiento de objetos S3 | AES-256-GCM en cliente; VMK nunca llega al servidor | Según versión y purga |
-| ID de dispositivo, huella, autorización, último uso, revocación | Usuario/dispositivo | Autorizar y gestionar dispositivos | API-DB texto plano | Claves asimétricas y revocación | Hasta revocación o baja |
-
-## 8. Búsqueda y datos temporales en iOS
-
-| Datos | Finalidad | Ubicación | Persistencia |
-|---|---|---|---|
-| Nombre, profesión, lugar, descripción y nota de cierre en texto plano | Búsqueda local por nombre e indexado | `vault_search_index` (FTS5) dentro de `vault.sqlite3` | **Persiste en el dispositivo en texto plano**; borrar una nota o entrada no siempre elimina la fila del índice |
-| Término de búsqueda | Filtrar la lista | Memoria iOS | No se envía a la API |
-| Pantallas y modelos con contenido descifrado | Presentar perfil y timeline | Memoria iOS | Durante la sesión; puede aparecer en logs locales de `LegacyMigrationOrchestrator` y `CrushViewModel` |
-
-## 9. Notas seguras
-
-| Datos | Persona | Finalidad | Ubicación | Sincronización remota |
+| Datos | Persona | Finalidad técnica | Ubicación/protección | Retención técnica o condición |
 |---|---|---|---|---|
-| Texto libre de nota | Usuario | Registro privado adicional | `local_vault_notes`, cifrado con VMK, solo local | **Ninguna.** El método que las convertiría en entradas remotas no tiene invocadores en el código activo |
+| UUID de usuario | Usuario | relacionar cuenta y ownership | API/RDS, legible | vida de cuenta; puede persistir temporalmente en logs/recibos tras baja |
+| Email | Usuario | alta, login, verificación, recuperación y avisos | API/RDS, normalizado y legible para backend; TLS, acceso y cifrado de infraestructura por demostrar; proveedor de email cuando se envía | cuenta provisional: máximo siete días desde el alta si no verifica; no se conserva como lead; cuenta verificada: vida de cuenta, se sustituye en baja |
+| Estado y plazo de verificación | Usuario | restringir una cuenta provisional y ejecutar su cierre si no verifica | API/RDS, sin contenido de email adicional | hasta verificar o hasta la baja automática de la cuenta provisional |
+| Password hash | Usuario | autenticación | API/RDS, hash no reversible | vida de cuenta; se invalida/sustituye en baja |
+| Nombre/perfil y teléfono, si se solicitan | Usuario | personalización/contacto | API/RDS; el teléfono se cifra como campo con `APP_KEY`; los demás atributos requieren inventario campo a campo | vida de cuenta o hasta modificación/baja |
+| Fecha de nacimiento y edad | Usuario | mayoría de edad y perfil | API/RDS, legible para backend | vida de cuenta; se retira en baja |
+| País y género del perfil | Usuario | perfil/localización y, si se usa, métricas | API/RDS, legible | vida de cuenta; minimización pendiente |
+| Google ID/token/callback | Usuario | OAuth condicional | API/proveedor Google | sólo si el canal se habilita; nulificación y retención por confirmar |
+| Identidad federada Apple: `sub` cifrado y su digest, email/Private Relay, estado de relay y refresh token cifrado | Usuario | identificar de forma estable el vínculo Apple, iniciar sesión, gestionar Private Relay y revocar autorización al borrar la cuenta | API/RDS; `sub`, email y refresh token cifrados; digest sólo para búsqueda/unicidad; Apple recibe solicitudes de validación/revocación | mientras exista el vínculo; el token de revocación se elimina al completarse la revocación o, si falla definitivamente, tras 30 días desde el fallo final |
+| Continuación Apple: digest de token y claims mínimos cifrados | Usuario | completar de forma explícita un alta o vínculo Apple validado | API/RDS; el token público no se persiste | 10 minutos o primer uso; después se purga |
+| Token Sanctum y expiración | Usuario | sesión | API/RDS y Keychain/cliente | 7 días desde emisión o revocación anterior |
+| OTP hash, expiración, intentos y lockout | Usuario | recuperación/verificación | API/RDS + email para el código en tránsito | ventana operativa y pruning a demostrar |
+| Último login/inactividad | Usuario | seguridad y cierre por inactividad | API/RDS | cierre tras 18 meses + 20 días de gracia según Product; plazo posterior a decidir |
+| Versiones y fecha de aceptación | Usuario | demostrar términos/privacidad aceptados | API/RDS; puede incluir contexto técnico | plazo probatorio a aprobar |
+| Motivo de baja, texto opcional, estado y recibo | Usuario | ejecutar baja y métricas de churn/compliance | API/RDS | plazo, acceso y necesidad del texto libre por aprobar |
 
-## 10. Timeline, actividad y métricas
+La verificación de email es una iniciativa activa. La cuenta nace provisional, sólo puede acceder al flujo de verificación y vence a los siete días desde el alta si no verifica; los reenvíos no extienden el plazo. Código de seis dígitos, expiración, intentos, bloqueo, reenvío y cambio de email no deben conservar códigos en claro. Una cuenta provisional expirada se elimina y su email no se convierte en lead ni destinatario comercial sin una base y consentimiento específicos aprobados.
 
-| Datos | Persona | Origen y finalidad | Ubicación y lectura | Conservación |
-|---|---|---|---|---|
-| Tipo de evento e IDs de crush, experiencia o relación | Usuario y tercera persona | Generado por acciones; construir actividad y timeline | API-DB texto plano | Purga tras 7 días salvo los cinco eventos más recientes por usuario (documentado; confirmar comando real) |
-| Métricas de atracción, satisfacción, evolución y relación | Usuario y terceras personas | Calculadas desde estados, fechas, atributos y valoraciones | API en memoria/respuesta; las fuentes permanecen en API-DB | Recalculables mientras existan las fuentes |
+## 3. Crush: tercera persona descrita
 
-Las métricas no son anónimas por omitir nombres: se calculan para una cuenta y describen patrones íntimos del usuario o de terceras personas. La API no genera prosa ni interpretación causal; solo entrega datos y cruces numéricos para un posible motor externo (LangGraph), en preparación y sin conexión activa hoy.
+### 3.1 Estructura visible para API
 
-## 11. Legal, comunicaciones, feedback y baja
-
-| Datos o campos | Persona | Finalidad | Ubicación y lectura | Conservación y borrado |
-|---|---|---|---|---|
-| Versión y texto de términos o política, idioma y estado activo | Todos los usuarios | Presentar documentos vigentes | API-DB texto plano | — |
-| Usuario, documento/versión, fecha, IP y user agent de aceptación | Usuario | Evidenciar qué documento se presentó/aceptó | API-DB texto plano | Sin poda automática identificada |
-| Feedback de eliminación de cuenta: motivo elegido, texto libre opcional, estado y fecha | Usuario | Procesar y documentar la solicitud de baja | API-DB texto plano | Sin poda automática identificada |
-
-## 12. Proveedores y datos recibidos
-
-> Verificado contra `composer.json`, `config/services.php`, `config/mail.php` (API) y las dependencias/imports de Xcode (iOS) el 5 de agosto de 2026.
-
-| Servicio | Proveedor | Datos que recibe | Finalidad | Estado |
-|---|---|---|---|---|
-| Hosting de API y base de datos | Amazon Web Services (RDS, MySQL, `eu-west-1`) | Todo el contenido de API-DB, incluyendo columnas cifradas con clave de aplicación | Prestar el backend | Activo |
-| Almacenamiento de objetos | Amazon S3 (`eu-west-1`) | Ciphertext y metadata del Vault; media legacy si se usa ese flujo | Vault y almacenamiento privado | Activo |
-| Autenticación federada | Google OAuth | Email, `google_id`, nombre (opcional) | Registro/login sin password | Activo (`config/services.php`) |
-| Autenticación e identidad | Firebase (Core, Auth, App Check) | Identificadores de sesión/dispositivo y los datos que Firebase Auth gestione | Autenticación y verificación de integridad de la app | Activo en iOS (`GoogleService-Info.plist`, `FirebaseApp.configure()`) |
-| Autenticación e identidad | AWS Amplify con plugin Cognito Auth | Sesión/identidad federada de Cognito | Autenticación | Activo en iOS (`configureAmplify()` en `AppDelegate`) — **coexiste con Firebase Auth**; revisar si ambos son necesarios |
-| Almacenamiento | AWS Amplify con plugin S3 Storage | Objetos que la app suba por este canal | Almacenamiento | Plugin activo en iOS; confirmar con ingeniería qué flujo lo usa hoy, dado que el Vault sube directamente por URL firmada sin pasar por Amplify |
-| Correo transaccional | Amazon SES | Email del usuario, para envío de OTP | Recuperación de contraseña | Configurado como mailer (`config/mail.php`) |
-| Monitoreo de errores | Sentry (Functional Software, Inc.) | Stack traces, `trace_id`, `user_id`, contexto de request | Diagnóstico de errores en producción | Activo (`sentry/sentry-laravel`) |
-| Caché de imágenes en cliente | Kingfisher (librería open source) | Imágenes descargadas de S3 | Caché local en el dispositivo del usuario | Activo en iOS; no envía datos a terceros |
-| Motor de interpretación por IA | LangGraph (proyecto externo) | Payload estructurado de estadísticas, sin PII | Interpretación narrativa de estadísticas | En preparación; sin conexión activa desde la API hoy |
-| Apple | Apple Inc. | Datos de distribución de la App Store | Distribución | Según declaración de privacidad de la tienda |
-
-No debe añadirse un proveedor a la política por la mera presencia de una dependencia. Antes de producción, ingeniería debe confirmar si Firebase Auth y Amplify/Cognito Auth están ambos realmente en uso o si uno es remanente de una integración anterior, y qué flujo usa el plugin de almacenamiento de Amplify.
-
-## 13. Campos que hoy siguen siendo legibles por la API fuera del Vault
-
-| Entidad | Campos | Estado hoy |
+| Campo/categoría | Finalidad técnica | Riesgo o inferencia |
 |---|---|---|
-| Crush | Nombre | Texto plano, sin cifrar |
-| Crush | Email, WhatsApp, Instagram, Facebook, Snapchat, TikTok | Cifrados con la clave única de aplicación; descifrados automáticamente por el backend al leerlos |
-| Experiencia | Lugar, descripción | Cifrados con la clave única de aplicación; descifrados automáticamente por el backend |
-| Relación | Nota de cierre | Cifrada con la clave única de aplicación; descifrada automáticamente por el backend |
+| UUID de crush y user ID | ownership, referencias y retry | vincula toda la historia con una cuenta |
+| edad y `age_as_of` | perfil y cálculo temporal | edad de tercera persona; posible singularización |
+| `gender_id` | filtro, perfil y estadísticas | atributo personal; proporcionalidad pendiente |
+| país | mapa, filtros y estadísticas | ubicación aproximada/nacionalidad inferida |
+| categoría Ducky | organización subjetiva | valoración o clasificación personal |
+| `met_at` | límite cronológico y bundle inicial | revela fecha de encuentro |
+| ratings de belleza, conexión, personalidad y atractivo | perfil y estadísticas | evaluación subjetiva potencialmente ofensiva o íntima |
+| rating global | resumen derivado | inferencia basada en ratings |
+| signo zodiacal | perfil/estadística, derivado en iOS | permite inferir parte del cumpleaños |
+| altura, ojos, pelo, cuerpo, piel y otros rasgos | perfil/estadísticas | combinación singularizante; algunos atributos merecen revisión reforzada |
+| estado actual, match status y correlación | Timeline/relaciones/estadísticas | inferencias afectivas o sexuales |
+| archivo, anonimización técnica, actividad y timestamps | operación/ciclo de vida | patrones de uso y retención |
 
-`CleanupLegacyDataJob`, encolado tras cada confirmación de migración al Vault, **solo registra su ejecución y no modifica ninguna de estas columnas.** No existe hoy una fecha ni un mecanismo activo para retirarlas.
+`gender_id` también puede aparecer dentro del snapshot cifrado para consistencia del cliente. La copia estructural de API es deliberada durante la beta y debe justificarse.
 
-## 14. Evidencia necesaria para validar este inventario
+### 3.2 Contenido privado E2EE
 
-- confirmación de qué comandos de purga están realmente activos en producción y con qué frecuencia real se ejecutan (`model:prune`, `sanctum:prune-expired`, `accounts:process-inactive`, `vault:purge-blobs`);
-- capturas sanitizadas de requests y responses de alta, edición, lectura y borrado, mostrando el contenido de contacto/lugar/descripción/nota viajando en texto plano por HTTPS;
-- inspección de SQLite, Keychain y filesystem iOS, incluyendo el contenido real de `vault_search_index`;
-- confirmación de qué plugin de Amplify se usa en producción (Auth, Storage, o ambos) y si Firebase Auth sigue activo en paralelo;
-- matriz de permisos de producción y registro de accesos administrativos a la base de datos y a `APP_KEY`;
-- confirmación de si `google_id` se conserva o se nulifica al anonimizar una cuenta.
+| Contenido | Persistencia | Backend |
+|---|---|---|
+| nombre | SQLite ciphertext + S3 Vault ciphertext | no recibe plaintext en el modelo final |
+| profesión | SQLite/S3 ciphertext | no recibe plaintext |
+| email, WhatsApp/teléfono y prefijo | SQLite/S3 ciphertext | no recibe plaintext |
+| Instagram, Facebook, Snapchat, TikTok u otras redes | SQLite/S3 ciphertext | no recibe plaintext |
+| día y mes de cumpleaños | SQLite/S3 ciphertext | recibe sólo edad/ancla y signo derivado |
+| otros detalles privados del perfil | SQLite/S3 ciphertext | no recibe plaintext si están incluidos en el contrato Vault |
 
-Las preguntas jurídicas derivadas de este inventario están centralizadas en la [guía de auditoría](05_MDL_Auditoria_Juridica.md).
+## 4. Experiencias
+
+| Datos | Ubicación | Finalidad | Riesgo |
+|---|---|---|---|
+| UUID, user/crush ID | API/RDS | ownership y asociación | vincula evento con cuenta y tercera persona |
+| día civil | API/RDS | cronología/unicidad | frecuencia y patrón temporal |
+| satisfacción | API/RDS | diario y estadísticas | valoración íntima/subjetiva |
+| correlación y relación vinculada | API/RDS | agrupar Timeline | revela contexto relacional |
+| lugar | Vault E2EE | relato privado | ubicación o contexto sensible |
+| descripción | Vault E2EE | relato privado | texto libre potencialmente muy sensible |
+
+Sólo existe una experiencia por crush y día civil. Una experiencia vinculada a una relación comparte correlación y fecha, lo que aumenta la capacidad de inferir contexto aun sin el texto.
+
+## 5. Relaciones
+
+### 5.1 Modelo de beta
+
+| Datos | Ubicación | Finalidad | Riesgo |
+|---|---|---|---|
+| UUID, user/crush ID | API/RDS | ownership y asociación | vinculación del historial |
+| estado relacional | API/RDS | reglas, Timeline y estadísticas | puede revelar vida afectiva/sexual o rechazo |
+| inicio y fin | API/RDS | orden y duración | cronología detallada |
+| match status | API/RDS | estado derivado/estadísticas | inferencia persistente y monotónica |
+| experiencia y correlación vinculadas | API/RDS | reconstrucción del bundle | contexto combinado |
+| nota de cierre | Vault E2EE | relato privado | texto libre íntimo |
+
+Los estados de beta son Prospecto, Ligue, One-night stand, FWB, Relación, Rechazado, No hubo match y Terminada.
+
+### 5.2 Rediseño futuro, no activo
+
+Si se implementa el rediseño conceptual, se añadirían o transformarían:
+
+- `connection_phase`;
+- `connection_label`;
+- historial append-only de cambios de etiqueta;
+- `closure_reason`;
+- períodos separados de cierre/reapertura;
+- fecha de corte de comparabilidad estadística;
+- tipos de experiencia si se promueve esa parte del diseño.
+
+Estos datos no forman parte del tratamiento activo. Antes de incorporarlos se debe revisar necesidad, granularidad, categorías especiales/inferencias, transparencia, base, conservación y derechos.
+
+## 6. Vault, dispositivo y objetos
+
+| Capa/dato | Contenido | Observación |
+|---|---|---|
+| VMK | clave aleatoria de 32 bytes | generada/usada en iOS; nunca en claro en backend |
+| Encapsulación principal | KDF, salt, ciphertext, nonce/tag y versión | recovery por contraseña |
+| Encapsulación mnemónica | parámetros y VMK encapsulada separadamente | recovery por frase de 24 palabras |
+| Vault | owner, estado y crypto version | API/RDS |
+| VaultEntityBinding | vault/user, tipo, entity ID y lookup token | metadata sensible; no reversible sin VMK |
+| VaultBlob metadata | IDs, tipo, tamaño, hash, storage path, crypto version, secuencia, timestamps y soft delete | API/RDS; no incluir token/secretos en logs |
+| VaultBlob object | snapshot ciphertext completo de una entidad | S3 privado mediante URL firmada |
+| VaultDevice | ID, public-key hash/fingerprint, autorización, uso y revocación | metadata de dispositivo |
+| VaultRecoveryKey/transferencia | fingerprint, estado y fechas | infraestructura; QR no es método normal de beta |
+| SQLite Vault | entries, revisiones, nonce/tag, metadata e intenciones | cifrado y namespaced por cuenta |
+| Keychain | VMK y material local | acceso bajo controles del dispositivo |
+| Operación durable | tipo, scope, snapshot/IDs, estado de retry y error saneado | cifrada localmente hasta resolución |
+
+El blob contiene un snapshot completo por entidad, no un blob por campo. Las revisiones antiguas sólo coexisten mientras se verifica la sustituta.
+
+## 7. Fotos y datos locales
+
+| Dato | Ubicación | Tratamiento de lanzamiento |
+|---|---|---|
+| foto original elegida | memoria temporal iOS | se procesa localmente |
+| foto saneada | sandbox `LocalMedia/{crushId}` | sin metadata EXIF/GPS, sin sync MDL, excluida de backup no deseado |
+| identificador/firma local | dispositivo | detectar duplicados y gestionar archivo |
+| cache/thumbnail local, si existe | dispositivo | mismo ciclo de borrado que la foto/entidad |
+
+No existe una entidad remota de media activa en beta. Las librerías que procesan localmente no son por ello destinatarios remotos.
+
+## 8. Timeline, estadísticas e IA
+
+| Actividad | Entradas | Salida/ubicación | Observación |
+|---|---|---|---|
+| Timeline | IDs, fechas, tipos, correlaciones y asociaciones | API/iOS | reconstruye eventos; no es fuente independiente |
+| Dashboard personal | estructura, estados, ratings, satisfacción, rasgos | API → iOS | sólo datos de la cuenta; puede producir inferencias |
+| Mapa | país del crush | API → iOS | coordenada representativa de país, no GPS |
+| AI payload | métricas y señales estructuradas | endpoint API sin consumidor activo | no se envía a LLM en beta |
+| Estadísticas comunitarias | no activas | ninguna | requerirían agregación/umbral y revisión previa |
+
+No se usan datos para entrenamiento de modelos generales. El prototipo LLM no está autorizado a recibir texto Vault ni datos reales hasta una decisión posterior.
+
+## 9. Logs, auditoría y seguridad
+
+| Categoría | Datos posibles | Regla técnica observada | Revisión necesaria |
+|---|---|---|---|
+| ActivityEvent | user/entity IDs, tipo y fecha | elegible tras 7 días salvo 5 eventos más recientes; se elimina con la entidad/baja según flujo | justificar o retirar la excepción de 5 |
+| AuditEvent | user/target IDs, evento, trace ID, IP y user agent | 30 días | finalidad, acceso y plazo |
+| AuthEvent | user/email hash o pivote, IP, user agent, resultado y fecha | 90 días en el modelo actual | campos exactos, antiabuso, derechos y coherencia con herramientas operativas |
+| SecurityAlert | user/entity ID, IP, ruta, método, tipo, severidad, disposition y metadata | 30 días | minimizar mensaje/metadata |
+| Logs API/CloudWatch | trace ID, ruta, método, status y error saneado | configuración real pendiente | retención, acceso, región y scrubbing |
+| Sentry | user ID técnico, stack trace, ruta y trace ID | `send_default_pii` previsto en false; SQL bindings previstos en false | capturar evidencia de configuración efectiva |
+
+Prohibido registrar VMK, contraseña/frase de recovery, tokens opacos, tokens de sesión, OTP en claro, payload privado, ciphertext completo o nombres de archivo aportados por el usuario.
+
+## 10. Proveedores y destinatarios a confirmar
+
+| Servicio | Datos posibles | Estado documental |
+|---|---|---|
+| AWS RDS/EC2 | cuenta, estructura, eventos y metadata/encapsulaciones | entidad, región, cifrado de storage, backups, DPA, accesos y subencargados pendientes |
+| AWS S3 | ciphertext, ruta, tamaño, hash y tiempos | región, versionado, lifecycle, backups y purga pendientes de evidencia |
+| AWS SES/mailer | email, OTP/mensaje, rebote y delivery | proveedor efectivo, región, retención y subencargados pendientes |
+| Sentry | diagnóstico técnico minimizado | proyecto/región, retención, accesos y scrubbing pendientes |
+| Notificaciones server-to-server Apple | digest de JWS, tipo, hora y digest de `sub`; nunca el JWS ni tokens | deduplicar reentregas y ordenar cambios de consentimiento o Private Relay | 30 días; el último evento aplicable permanece sólo con la identidad Apple activa |
+| Google OAuth | identidad federada y tokens | condicional a estar expuesto en iOS; alcance/retención/transferencias pendientes |
+| Apple | autenticación federada: `sub`, email o Private Relay, credenciales temporales y revocación; además distribución/Keychain según plataforma | proveedor de identidad; confirmar región/transferencias, términos, Private Email Relay, endpoint de notificaciones y disclosure público antes del rollout |
+| Proveedor LLM | ninguno en beta | no incorporar al RoPA activo hasta conexión autorizada |
+
+## 11. Borrado, baja y datos conservados
+
+- **Borrado de experiencia/relación:** soft delete funcional, blobs asociados y purga a siete días.
+- **Borrado de crush:** incluye descendientes, bindings/blobs, entries/notas locales y fotos.
+- **Baja de cuenta:** operación atómica y fail-closed (`DELETE /users`); revoca tokens; el Vault y sus blobs entran en soft-delete con la misma purga a siete días que el borrado dirigido (bindings retenidos hasta completarla); elimina de inmediato encapsulaciones, devices y recovery keys, y luego artefactos locales de iOS; sustituye identificadores directos o elimina la estructura según política. Si hay una identidad Apple, la baja retira el vínculo y crea una intención cifrada de revocación: cinco reintentos rápidos; ante fallo final, sólo ese token permanece hasta 30 días para un reintento manual autorizado y después se elimina definitivamente. La cuenta nunca se restaura por un fallo de Apple. Es irreversible; no existe reset de Vault independiente de la baja.
+- **Cuenta provisional sin verificar:** vence siete días después del alta; se elimina con el flujo de baja aplicable, sin retener el email como lead. No debe existir Vault generado antes de verificar.
+- **Backups/versiones:** pueden expirar en otro plazo; debe conocerse y explicarse el tratamiento durante restauraciones.
+- **Estadísticas posteriores:** conservar filas individuales desidentificadas puede constituir seudonimización. No calificarlas como anónimas sin decisión jurídica y prueba de reidentificación.
+- **Feedback y auditoría:** pueden sobrevivir transitoriamente a la baja por finalidades aprobadas, con acceso y plazo propios.
+
+## 12. Decisiones pendientes
+
+- finalidades y bases por actividad, dato y persona;
+- deber de información respecto de terceras personas y posibles excepciones;
+- calificación de estados relacionales, inferencias y categorías especiales;
+- necesidad de EIPD;
+- minimización de género, edad, país, rasgos, ratings, estados y correlaciones;
+- estrategia estadística tras la baja: agregación irreversible o retención seudonimizada;
+- retención exacta de datos activos, soft deletes, eventos, logs, OTP, backups y proveedores;
+- acceso, rectificación, oposición, restricción, portabilidad y supresión cuando backend no descifra Vault;
+- proveedores, regiones, transferencias, DPA y subencargados reales;
+- condición de lanzamiento para OAuth, verificación de email y cualquier función futura.
