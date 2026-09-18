@@ -1,6 +1,8 @@
 # Cambios pendientes visibles en beta
 
-> **Estado:** activo. Base durable, retry, proyección y contención están implementados. La matriz física de `IOS-PENDING-02F` y la protección desplegada de `API-PENDING-03` están validadas. `IOS-PENDING-02E`, `IOS-PENDING-03`, `IOS-PENDING-04`, `API-PENDING-04`, `API-PENDING-05` y `API-PENDING-06` tienen implementación y cobertura automatizada completas; `02E`, `03`, `IOS-PENDING-04`, `API-PENDING-04` y `API-PENDING-05` conservan las validaciones desplegadas/físicas indicadas abajo, mientras que `API-PENDING-06` no requiere una validación física adicional. En `IOS-PENDING-03`, Corregir reabre los seis tipos desde la intención cifrada y preserva sus IDs; las ediciones sólo se reabren cuando el Timeline confirmado aporta su contexto completo, sin inventar fechas, vínculos ni identidades. `IOS-PENDING-04` completa en los flujos de alta la unicidad diaria por Crush y tipo, conserva libre el slot de Experience ocupado sólo por una Relationship standalone y deja el rechazo `422` de API como defensa autoritativa ante datos desactualizados o carreras. No queda otra fase de código en esta iniciativa: continúan únicamente las validaciones físicas/desplegadas de `API-PENDING-02/02-R`, `IOS-PENDING-02D/02D-S`, `IOS-PENDING-02E`, `IOS-PENDING-03`, `IOS-PENDING-04`, `API-PENDING-04` y `API-PENDING-05`. `API-PENDING-05` registra altas confirmadas de Crush, Experience y Relationship; editar una Relationship existente no genera actividad, aunque cambie su estado, conforme a [`PRODUCT.md` §8.4](../../../PRODUCT.md#84-actividad-reciente-de-home). El antiguo escaneo D1/D2 fue reemplazado por el borrado dirigido estable documentado en [`VAULT.md`](../../../VAULT.md) y ya no forma parte de este plan.
+> **Autoridad funcional:** las reglas completas están en [Guardado y sincronización](../../../rules/SYNC.md); las relacionales en [Relaciones](../../../rules/RELATIONSHIPS.md). Los escenarios de este plan referencian ese catálogo. No se conserva compatibilidad runtime anterior al lanzamiento ni una matriz alternativa de ocho estados.
+
+> **Estado:** activo. Base durable, retry, proyección y contención están implementados. La matriz física de `IOS-PENDING-02F` y la protección desplegada de `API-PENDING-03` están validadas. `IOS-PENDING-02E`, `IOS-PENDING-03`, `IOS-PENDING-04`, `API-PENDING-04`, `API-PENDING-05` y `API-PENDING-06` tienen implementación y cobertura automatizada completas; `02E`, `03`, `IOS-PENDING-04`, `API-PENDING-04` y `API-PENDING-05` conservan las validaciones desplegadas/físicas indicadas abajo, mientras que `API-PENDING-06` no requiere una validación física adicional. En `IOS-PENDING-03`, Corregir reabre los seis tipos desde la intención cifrada y preserva sus IDs; las ediciones sólo se reabren cuando el Timeline confirmado aporta su contexto completo, sin inventar fechas, vínculos ni identidades. `IOS-PENDING-04` completa en los flujos de alta la unicidad diaria por Crush y tipo, conserva libre el slot de Experience ocupado sólo por una Relationship standalone y deja el rechazo `422` de API como defensa autoritativa ante datos desactualizados o carreras. La validación física detectó una brecha adicional acotada de presentación: el badge agregado de Lista puede abrir una hoja vacía si la operación termina entre el tap y la construcción de la hoja. `IOS-PENDING-05` debe cerrar esa carrera sin cambiar el pipeline ni los contratos. Continúan además las validaciones físicas/desplegadas de `API-PENDING-02/02-R`, `IOS-PENDING-02D/02D-S`, `IOS-PENDING-02E`, `IOS-PENDING-03`, `IOS-PENDING-04`, `API-PENDING-04` y `API-PENDING-05`. `API-PENDING-05` registra altas confirmadas de Crush, Experience y Relationship; editar una Relationship existente no genera actividad, aunque cambie su estado, conforme a [Actividad de Home](../../../rules/TIMELINE.md#home). El borrado dirigido estable está documentado en [`VAULT.md`](../../../VAULT.md) y queda fuera de este plan.
 > **Proyectos:** iOS y API.
 
 > **API-PENDING-04 — estado vigente:** implementación y pruebas automatizadas completas; el borrado preserva la correlación de una relación inicial y limpia la de un vínculo standalone. Quedan despliegue, validación física y prueba de concurrencia real.
@@ -18,7 +20,7 @@ Cuando una persona pulsa guardar, MDL distingue inmediatamente entre guardado lo
 - Estado visible, retry limitado, corrección y descarte seguro.
 - Bloqueos sólo por crush y dominio realmente conflictivo.
 - Archivo y borrado interactuables aunque existan pendientes, conforme a certeza remota.
-- Compatibilidad conservadora con operaciones legacy.
+- Fallo seguro ante snapshots incompatibles; sin compatibilidad runtime anterior al contrato final.
 
 Fuera de alcance:
 
@@ -39,11 +41,11 @@ Las reservas se identifican por UUID canónico de crush. Una operación sin scop
 
 ## Escenarios de producto — Dado / Cuando / Entonces
 
-Esta matriz es el contrato ejecutable de aceptación de la iniciativa mientras permanezca activa; no reemplaza las reglas estables de [`PRODUCT.md`](../../../PRODUCT.md) y [`TIMELINE.md`](../../../TIMELINE.md).
+Esta matriz es el contrato ejecutable de aceptación de la iniciativa mientras permanezca activa; no reemplaza las reglas estables de [Sincronización](../../../rules/SYNC.md) y [Timeline](../../../rules/TIMELINE.md).
 
 - GWT-01 a GWT-14 y GWT-31 a GWT-42 ejercitan reglas de dominio/Timeline que **ya viven de forma permanente** en esos documentos canónicos. Se conservan aquí temporalmente porque API e iOS todavía tienen fases abiertas que deben demostrarlas de extremo a extremo.
 - GWT-15 a GWT-30 describen la mecánica específica de guardado durable, proyección, retry, resolución y compatibilidad legacy que esta iniciativa está terminando.
-- Al cerrar la iniciativa, el comportamiento durable final se integra en `PRODUCT.md`/`ARCHITECTURE.md`; este plan y los locales se eliminan. Las reglas de Timeline no se “pierden” ni dependen de conservar el plan.
+- Al cerrar la iniciativa, el comportamiento durable final se integra en `rules/SYNC.md` y el detalle técnico en `ARCHITECTURE.md`; este plan y los locales se eliminan. Las reglas de Timeline no se “pierden” ni dependen de conservar el plan.
 
 ### Formularios y cronología
 
@@ -60,9 +62,9 @@ Esta matriz es el contrato ejecutable de aceptación de la iniciativa mientras p
 | GWT-09 | Una experiencia sin relación puede originar una relación | La persona elige `Agregar relación` | La fecha de la experiencia se prellena y bloquea; al confirmar, ambas quedan vinculadas en el mismo día, sin crear una experiencia duplicada. |
 | GWT-10 | Una relación standalone puede recibir una experiencia | La persona elige `Linkear experiencia` | La fecha de la relación se prellena y bloquea; se crea una única experiencia vinculada a esa relación, no una standalone independiente. |
 | GWT-11 | Existe una cadena de relaciones | La persona abre acciones de una relación histórica | Editar y eliminar no se muestran. Sólo la relación latest/current puede ofrecer edición y sólo si es posterior puede ofrecer eliminación. |
-| GWT-12 | Una relación posterior latest/current tiene una relación anterior | Se elimina la latest | La anterior se reabre; la relación inicial nunca se elimina y eliminar una experiencia nunca produce este efecto. |
+| GWT-12 | Existe un último hito posterior elegible | Se elimina correctivamente | Aplica RP-HIT-003/008/009: restaura el hito anterior del mismo período y conserva la Experience. Borrar un período completo sigue RP-HIT-010 y nunca reabre otro anterior. |
 | GWT-13 | `met_at` se edita dentro del rango permitido por eventos confirmados y pendientes del mismo crush | La persona guarda | Es una operación de profile; mueve el bundle inicial junto y no queda bloqueada por una pendiente de Timeline. |
-| GWT-14 | La fecha propuesta de `met_at` quedaría después de un evento posterior no perteneciente al bundle | La persona usa el calendario o intenta guardar | La UI limita/rechaza la fecha antes de persistir; si un cliente desactualizado recibe rechazo API, muestra el error y refresca sin retry automático de validación. |
+| GWT-14 | La fecha propuesta de `met_at` coincidiría con la fecha del primer acontecimiento independiente del mismo Crush o quedaría después | La persona usa el calendario o intenta guardar | La UI limita la selección al día anterior a ese acontecimiento y rechaza cualquier fecha igual o posterior antes de persistir; si un cliente desactualizado recibe rechazo API, muestra el error y refresca sin retry automático de validación. |
 
 ### Persistencia, proyección y resolución
 
@@ -81,7 +83,7 @@ Esta matriz es el contrato ejecutable de aceptación de la iniciativa mientras p
 | GWT-25 | Una operación nunca enviada o rechazada con certeza de no mutación | La persona confirma eliminar/descartar | Se elimina la intención completa y su proyección; un alta desaparece y una edición vuelve a la entidad confirmada. |
 | GWT-26 | Existe timeout ambiguo o etapa `apiAccepted+` | La persona quiere eliminar el cambio | No se finge descarte local. Primero se reconcilia; si la entidad existe, se utiliza después el borrado funcional normal. |
 | GWT-27 | Un crush confirmado tiene pendiente de Timeline | La persona lo archiva | Se ejecuta el PATCH real. Tras éxito sale de activos y Archivados conserva badge/hoja hasta resolver la pendiente. |
-| GWT-28 | La persona pulsa eliminar un crush con pendientes | Se evalúa la certeza de todas ellas | Si todas son descartables, una confirmación las elimina y continúa el borrado normal; si alguna es ambigua/aceptada, no se inicia D1/D2 y se explica cuál debe resolverse. |
+| GWT-28 | La persona pulsa eliminar un crush con pendientes | Se evalúa la certeza de todas ellas | Si todas son descartables, una confirmación las elimina y continúa el borrado normal. Si alguna tiene resultado incierto, la aplicación lo comprueba antes de continuar; mientras no pueda confirmarlo, no elimina el Crush ni su copia local. |
 | GWT-29 | Hay una legacy sin scope derivable | La app normaliza o reanuda | Queda en revisión sin crush inventado, no se ejecuta automáticamente y no bloquea ningún alta independiente. |
 | GWT-30 | Una versión antigua dejó varias operaciones del mismo crush y dominio | La app reanuda | Sólo la cabecera estable puede avanzar; las posteriores nunca corren en paralelo ni se promocionan automáticamente y sólo se descartan si es seguro. |
 
@@ -97,11 +99,12 @@ Esta matriz es el contrato ejecutable de aceptación de la iniciativa mientras p
 | GWT-36 | Un crush conserva su relación inicial y no existe una relación posterior | La persona abre sus acciones | Puede editar su estado a cualquiera de los permitidos manteniendo la fecha `met_at`, pero Eliminar no aparece y API rechaza cualquier intento directo de borrado sin mutar el crush. |
 | GWT-37 | Ya existe una experiencia confirmada o pendiente de un crush en el día civil `D` | Se intenta crear o mover otra experiencia a `D` | La interfaz pide editar la existente y no persiste otra intención; una petición directa/desactualizada recibe rechazo sin mutar. |
 | GWT-38 | Ya existe un cambio de relación confirmado o pendiente de un crush en el día civil `D` | Se intenta crear o mover otra relación a `D` | La interfaz pide editar la relación latest de ese día y no persiste otra intención; una petición directa/desactualizada recibe rechazo sin mutar. La relación inicial y la experiencia inicial pueden compartir `D` porque son tipos distintos dentro del bundle. |
-| GWT-39 | Product/API definen la matriz canónica de ocho estados en `TIMELINE.md` §4 | iOS muestra estados posibles al crear/editar una relación | Ofrece exactamente la misma matriz que API. Para la relación inicial latest, que no tiene estado anterior, ofrece los ocho estados con fecha fija a `met_at`; sus tests no protegen una matriz alternativa. |
+| GWT-39 | [Relaciones](../../../rules/RELATIONSHIPS.md#trayectos) define las situaciones y trayectos lógicos | iOS registra o corrige una relación | Cliente y API aplican RP-TRA-001..008 y RP-HIT-005 según la intención. El alta inicial describe la situación existente sin fabricar historia; una corrección conserva su fecha. |
 | GWT-40 | Una edición de profile pendiente modifica realmente `met_at` de un crush confirmado | La persona intenta crear una experiencia nueva de ese mismo crush | `Agregar experiencia` no inicia formulario ni persiste otra intención y explica que debe terminar la actualización de la fecha. Al sincronizar, corregir o descartar la edición, el alta vuelve a estar disponible. No se calcula un rango hipotético entre el `met_at` confirmado y el propuesto; otros crushes y acciones no quedan redefinidos por este escenario. |
 | GWT-41 | Una relación standalone no tiene experiencia vinculada | Se crea o mueve una experiencia normal no vinculada a ese mismo día civil, o se crea la relación desde esa experiencia | Ambos conservan sus UUID, comparten la correlación de la relación y aparecen en una única tarjeta vinculada; nunca quedan dos standalone simultáneas. |
 | GWT-42 | Una relación ya tiene una experiencia vinculada | Se intenta crear o mover otra experiencia a ese día civil | Se rechaza antes de mutar o dentro de una transacción con rollback, se explica que ese día ya tiene experiencia y no aparece una segunda tarjeta. La beta no ofrece `Desvincular`; borrar la experiencia vinculada conserva la relación y libera su slot. |
 | GWT-43 | Una creación confirmada de Crush, Experience o Relationship posterior | La persona abre Home con el Vault desbloqueado | Home muestra la actividad reciente correspondiente a la referencia estructural persistida y resuelve sus etiquetas privadas desde Vault. La relación inicial no duplica el alta del Crush; editar una Relationship existente —incluso su estado— y las demás ediciones o borrados no generan actividad. |
+| GWT-44 | Un badge agregado sigue visible mientras su operación termina o acaba de ser retirada | La persona lo toca durante esa transición | La app abre contenido coherente para el `operationId` capturado o no presenta la hoja; nunca muestra una hoja vacía. Al completar API, persistencia local, upload y verificación, el badge desaparece tras reconciliar la fuente confirmada. |
 
 ## Estados visibles y retry
 
@@ -145,7 +148,7 @@ La hoja se abre por `operationId` exacto y no expone texto libre del backend.
 
 - Un crush confirmado se archiva con pendiente Timeline; Archivados conserva su estado/resolución.
 - Un root provisional no se archiva.
-- Borrar crush siempre responde. Si todas sus pendientes son descartables, las elimina y continúa el borrado normal. Si existe una ambigua/aceptada, explica y no inicia D1/D2.
+- Borrar un Crush siempre produce un resultado comprensible. Si todas sus pendientes son descartables, las elimina y continúa el borrado normal. Si alguna tiene resultado incierto, la aplicación lo comprueba antes de continuar y conserva el Crush mientras no pueda confirmarlo.
 - Un root provisional se puede eliminar sólo con certeza de que no existe remoto.
 - Toda experiencia confirmada se puede borrar; una vinculada deja la relación standalone.
 - Una experiencia pendiente local-only/rechazada se descarta. Una ambigua/aceptada se reconcilia y luego usa borrado funcional.
@@ -160,16 +163,17 @@ La hoja se abre por `operationId` exacto y no expone texto libre del backend.
 
 ## Estado y orden restante
 
-1. **Código:** no queda otra fase de implementación pendiente en esta iniciativa. `IOS-PENDING-03` deja Corregir disponible para los seis tipos de operación; `IOS-PENDING-04` completa la unicidad diaria/vínculo por fecha de GWT-37/GWT-38/GWT-41/GWT-42; `API-PENDING-06` completa GWT-35 con el orden total `event_date DESC, created_at DESC, item_type ASC, item_id ASC`.
-2. Completar en el entorno desplegado la validación de `API-PENDING-02/02-R`: reasociación a `met_at` con slot libre/ocupado/vinculada y concurrencia real del lock. `API-PENDING-03` ya valida la exclusión de la relación inicial en ese entorno.
-3. Completar en iOS las validaciones físicas de `IOS-PENDING-02D/02D-S`, `IOS-PENDING-03` e `IOS-PENDING-04`: formularios, fechas civiles, contención cross-crush, archivo y borrado; para `03`, Corregir/Eliminar/Reintentar con los seis tipos en offline/online/background; para `04`, unicidad diaria y vínculo Relationship–Experience con API desplegada, incluyendo datos desactualizados/carreras. La matriz de cuatro escenarios de `IOS-PENDING-02F` está validada.
-4. Desplegar y validar físicamente `API-PENDING-04`: unicidad diaria, vínculo por fecha y correlación, rechazo sin mutación de fechas manipuladas y conservación de la relación inicial tras borrar su experiencia. Ejecutar una prueba de concurrencia real en un motor que aplique locks.
-5. Validar físicamente `IOS-PENDING-02E`: los ocho estados de la relación inicial, los destinos de Prospecto y Rechazado, el cambio de relación dentro de experiencia, guardar la latest sin cambiar estado y la ausencia de edición en una relación histórica.
-6. Validar físicamente `API-PENDING-05` tras el despliegue: las altas confirmadas aparecen una sola vez en Home, la relación inicial no duplica el alta del Crush y editar una Relationship existente no crea otra actividad. La implementación y la cobertura automatizada ya están completas.
+1. Implementar `IOS-PENDING-05`: presentación atómica de la hoja desde el badge agregado de Lista, fijada a una proyección/`operationId` capturados; si ya no existe proyección al tocar, no se presenta nada. No modifica etapas, retry, Vault ni API.
+2. El resto del código de la iniciativa está implementado: `IOS-PENDING-03` deja Corregir disponible para los seis tipos de operación; `IOS-PENDING-04` completa la unicidad diaria/vínculo por fecha de GWT-37/GWT-38/GWT-41/GWT-42; `API-PENDING-06` completa GWT-35 con el orden total `event_date DESC, created_at DESC, item_type ASC, item_id ASC`.
+3. Completar en el entorno desplegado la validación de `API-PENDING-02/02-R`: reasociación a `met_at` con slot libre/ocupado/vinculada y concurrencia real del lock. `API-PENDING-03` ya valida la exclusión de la relación inicial en ese entorno.
+4. Completar en iOS las validaciones físicas de `IOS-PENDING-02D/02D-S`, `IOS-PENDING-03` e `IOS-PENDING-04`: formularios, fechas civiles, contención cross-crush, archivo y borrado; para `03`, Corregir/Eliminar/Reintentar con los seis tipos en offline/online/background; para `04`, unicidad diaria y vínculo Relationship–Experience con API desplegada, incluyendo datos desactualizados/carreras. La matriz de cuatro escenarios de `IOS-PENDING-02F` está validada.
+5. Desplegar y validar físicamente `API-PENDING-04`: unicidad diaria, vínculo por fecha y correlación, rechazo sin mutación de fechas manipuladas y conservación de la relación inicial tras borrar su experiencia. Ejecutar una prueba de concurrencia real en un motor que aplique locks.
+6. Reconciliar el alcance de `IOS-PENDING-02E` con [Relaciones](../../../rules/RELATIONSHIPS.md) antes de validarlo: nueve situaciones, trayectos lógicos, creación frente a corrección, hito inicial y ausencia de mutación histórica. Las expectativas de ocho estados quedan retiradas.
+7. Validar físicamente `API-PENDING-05` tras el despliegue: las altas confirmadas aparecen una sola vez en Home, la relación inicial no duplica el alta del Crush y editar una Relationship existente no crea otra actividad. La implementación y la cobertura automatizada ya están completas.
 
 ## Decisiones de producto abiertas
 
-Ninguna conocida dentro del alcance vigente. Si aparece una nueva durante implementación, se detiene esa parte y se consulta de una en una antes de codificar.
+Las [decisiones pendientes](../../../PRODUCT.md#decisiones-pendientes) y la adaptación de [Relaciones](../../../rules/RELATIONSHIPS.md) deben resolverse/reconciliarse antes de una fase dependiente. La mecánica durable conserva RP-DUR/RP-RET/RP-RES.
 
 ## Criterios de aceptación
 
@@ -180,6 +184,7 @@ Ninguna conocida dentro del alcance vigente. Si aparece una nueva durante implem
 - [ ] `Necesita revisión` siempre tiene motivo y resolución operable.
 - [ ] Descarte sólo cuando existe certeza de no mutación remota.
 - [ ] Home/Profile/Archivados conservan identidad, badge y acciones coherentes.
+- [ ] Ningún badge puede presentar una hoja vacía si su operación completa durante el tap.
 - [ ] Borrar experiencia, relación y crush nunca es un botón muerto ni un falso éxito.
 - [ ] Contenido privado permanece cifrado y fuera de metadata/logs.
 
@@ -188,4 +193,4 @@ Ninguna conocida dentro del alcance vigente. Si aparece una nueva durante implem
 - [`api/docs/plans/active/durable-write-feedback/README.md`](../../../../../api/docs/plans/active/durable-write-feedback/README.md).
 - [`ios/docs/plans/active/durable-write-feedback/README.md`](../../../../../ios/docs/plans/active/durable-write-feedback/README.md).
 
-Al cerrar la iniciativa, las reglas estables se integran en [`PRODUCT.md`](../../../PRODUCT.md) y [`ARCHITECTURE.md`](../../../ARCHITECTURE.md), y los tres planes se eliminan.
+Al cerrar la iniciativa, las reglas estables se integran en [Sincronización](../../../rules/SYNC.md) y los demás dominios afectados, y el detalle técnico en [`ARCHITECTURE.md`](../../../ARCHITECTURE.md), y los tres planes se eliminan.

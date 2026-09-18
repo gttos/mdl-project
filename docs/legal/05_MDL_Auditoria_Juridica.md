@@ -1,6 +1,6 @@
 # 5. Guía para la auditoría jurídica
 
-> Brief para asesoría basado en el modelo objetivo de beta a 2 de septiembre de 2026. Las conclusiones y textos finales corresponden al abogado o DPO, no a ingeniería.
+> Brief para asesoría basado en la beta de lanzamiento a 14 de septiembre de 2026. Las conclusiones y textos finales corresponden al abogado o DPO, no a ingeniería.
 
 ## 1. Encargo propuesto
 
@@ -18,15 +18,15 @@ Revisar MDL antes del lanzamiento en España y el EEE —o en los países que co
 - acceso, rectificación, oposición, restricción, supresión y portabilidad;
 - proveedores, transferencias, subencargados y medidas contractuales;
 - seguridad, incidentes y lenguaje público sobre E2EE;
-- control de cambios para relaciones, IA, OAuth y funciones posteriores.
+- control de cambios para futuras ampliaciones relacionales, IA, Google OAuth y nuevos proveedores.
 
 ## 2. Hechos esenciales
 
 1. MDL es un diario privado, no una red social, y no publica perfiles.
 2. El usuario registra información sobre terceras personas que normalmente no tienen cuenta ni contacto con MDL.
-3. Los estados relacionales pueden revelar o permitir inferir vida afectiva o sexual.
-4. API conserva IDs, fechas, estados, ratings, país, género, rasgos, asociaciones, match status y metadata necesarios para el producto.
-5. En el modelo final, iOS cifra nombre, contacto, redes, cumpleaños, lugar, descripción y nota de cierre antes de transferirlos.
+3. Las fases, etiquetas, cierres e historiales relacionales pueden revelar o permitir inferir vida afectiva o sexual.
+4. API conserva IDs, fechas, fases, etiquetas, motivos catalogados, historiales, ratings, país, género, rasgos, asociaciones, `everMatched` y metadata necesarios para el producto.
+5. iOS cifra nombre, contacto, redes, cumpleaños, lugar, descripción, nota de cierre y explicaciones relacionales libres antes de transferirlos.
 6. Backend no recibe la VMK en claro y no dispone de una operación para descifrar el Vault.
 7. Un blob es el snapshot completo de una entidad; las revisiones anteriores sólo coexisten hasta verificar su sustituta.
 8. Un binding opaco permite localizar y borrar revisiones sin descifrar.
@@ -34,17 +34,18 @@ Revisar MDL antes del lanzamiento en España y el EEE —o en los países que co
 10. El borrado funcional precede a la purga física de blobs, prevista después de siete días.
 11. Recovery sustituye el dispositivo y no equivale a sincronización continua entre dos dispositivos activos.
 12. La API prepara estadísticas personales; el servicio LLM no recibe datos reales en beta.
-13. El rediseño de relaciones con fases, etiquetas y motivos de cierre es futuro y aumentaría la granularidad del tratamiento.
-14. El flujo interno llamado “anonimización” puede conservar filas estructurales enlazadas. Sin evaluación adicional, no debe asumirse que dejan de ser datos personales.
+13. La beta usa exclusivamente relaciones nativas por períodos, con historiales append-only y motivos de cierre; no existe runtime o fallback al enum anterior.
+14. La verificación de email y Sign in with Apple forman parte de la beta; Google OAuth no está expuesto.
+15. El flujo interno llamado “anonimización” puede conservar filas estructurales enlazadas. Sin evaluación adicional, no debe asumirse que dejan de ser datos personales.
 
 ## 3. Registro de actividades — borrador técnico
 
 | Actividad | Personas y datos | Finalidad técnica | Sistemas/destinatarios | Pregunta jurídica |
 |---|---|---|---|---|
-| Cuenta y autenticación | usuario: email, perfil, DOB, credenciales, sesión, IP/eventos | alta, acceso y seguridad | iOS, API/RDS, email; Google si se activa | base, edad, necesidad y conservación |
+| Cuenta y autenticación | usuario: email, perfil, DOB, credenciales, sesión, IP/eventos | alta, acceso y seguridad | iOS, API/RDS y email | base, edad, necesidad y conservación |
 | Sign in with Apple | usuario: `sub` Apple, email o Private Relay, estado de forwarding, tokens técnicos de corta o limitada conservación y eventos de revocación | alta, acceso, vínculo explícito y revocación al borrar cuenta | iOS, API/RDS y Apple | proveedor/transferencias, transparencia, retención de token y respuesta ante revocación |
 | Verificación/recuperación | email, OTP, intentos, lockout y entrega | control del email y recuperación | API/RDS, mailer | anti-enumeración, retención y mensajes |
-| Diario estructural | usuario y terceros: IDs, fechas, estados, ratings, país/género/rasgos | Timeline, reglas y estadísticas | iOS, API/RDS | categorías especiales, minimización, terceros |
+| Diario estructural | usuario y terceros: IDs, fechas, fases, etiquetas, cierres, historiales, `everMatched`, ratings, país/género/rasgos | Timeline, reglas y estadísticas | iOS, API/RDS | categorías especiales, minimización, terceros |
 | Contenido Vault | usuario y terceros: texto privado cifrado | diario, sync y recovery | iOS, API metadata, S3 ciphertext | transparencia, derechos y custodia de secretos |
 | Fotos locales | terceros: imágenes | galería privada | dispositivo y posibles backups del SO | información, seguridad y borrado |
 | Timeline y mapa | eventos, asociaciones, país y fechas | visualización personal | API/iOS | granularidad y retención |
@@ -53,15 +54,14 @@ Revisar MDL antes del lanzamiento en España y el EEE —o en los países que co
 | Auditoría y seguridad | IDs, IP, user agent, rutas, eventos y trazas | fraude, diagnóstico e incidentes | API, CloudWatch/Sentry | acceso, plazo y transferencias |
 | Email transaccional | email, contenido del mensaje, delivery/rebote | OTP y avisos | API/proveedor email | base, contenido, retención y subencargados |
 | IA futura | métricas o contexto que se autorice | insights narrativos | API/LLM/proveedor | nueva finalidad, proveedor, entrenamiento y derechos |
-| Rediseño futuro de relaciones | fases, etiquetas, historial, cierres y fechas | cronología/estadísticas más precisas | iOS/API/RDS | revisión previa de alto riesgo y transparencia |
 
 ## 4. Riesgos a priorizar
 
 | Riesgo | Situación | Decisión requerida |
 |---|---|---|
 | Terceras personas sin relación directa | intrínseco al diario | base, información/excepción y ejercicio de derechos |
-| Estados e inferencias íntimas | estructura visible aun con E2EE | categoría, minimización, salvaguardas y EIPD |
-| Reidentificación tras la baja | UUIDs, fechas y secuencias pueden persistir | agregación irreversible o retención seudonimizada |
+| Historial e inferencias íntimas | fases, etiquetas, cierres, hitos y asociaciones visibles aun con E2EE | categoría, minimización, salvaguardas y EIPD |
+| Reidentificación tras la baja | UUIDs, fechas y secuencias pueden persistir | calificación jurídica, plazo, acceso, agregación de salidas y salvaguardas |
 | Confianza excesiva en E2EE | metadata, cuenta, dispositivo y fotos quedan fuera | redacción pública precisa |
 | Borrado y backups | purga diferida y ciclos de proveedor | SLA, restauración, excepciones y prueba |
 | Recovery secrets | el usuario custodia material de alto impacto | UX, soporte, pérdida y compromiso |
@@ -77,10 +77,10 @@ Revisar MDL antes del lanzamiento en España y el EEE —o en los países que co
 1. ¿Quién es el responsable y cuál es el alcance territorial real?
 2. ¿Qué finalidad y base corresponden a cada actividad y a cada tipo de persona?
 3. ¿Qué deber de información existe respecto de terceras personas y qué excepciones son aplicables?
-4. ¿Los estados, experiencias, género, ratings o inferencias entran en categorías especiales en el caso concreto?
+4. ¿Las fases, etiquetas, cierres, historiales, Experiences, género, ratings o inferencias entran en categorías especiales en el caso concreto?
 5. ¿Requiere MDL una EIPD antes del lanzamiento por la combinación de intimidad, terceros, inferencias y aplicación móvil?
 6. ¿Qué campos estructurales son necesarios y proporcionales para cada finalidad?
-7. ¿Qué estrategia se aprueba después de la baja: agregación irreversible o retención seudonimizada?
+7. ¿Cómo se califica la estructura desidentificada conservada después de la baja y qué base, plazo, acceso y salvaguardas requiere?
 8. ¿Qué plazos y excepciones aplican a datos activos, soft deletes, blobs, bindings, eventos, logs y backups?
 9. ¿Qué lenguaje puede usarse sobre E2EE sin ocultar metadata, estructura, fotos locales, recovery y dispositivo único?
 10. ¿Cómo se atienden derechos de una tercera persona sin revelar la existencia o contenido del diario?
@@ -88,7 +88,7 @@ Revisar MDL antes del lanzamiento en España y el EEE —o en los países que co
 12. ¿Qué edad mínima y mecanismo proporcionado de verificación corresponden en cada país?
 13. ¿Qué proveedores, regiones y transferencias pueden utilizarse y bajo qué contratos?
 14. ¿Qué eventos constituyen brecha notificable y cómo se evalúa ciphertext sin claves conocidas?
-15. ¿Qué revisión de cambio es obligatoria antes de activar el rediseño de relaciones o IA?
+15. ¿Qué revisión de cambio es obligatoria antes de ampliar el modelo relacional o activar IA, Google OAuth u otro proveedor?
 
 ## 6. Entregables solicitados
 
@@ -104,7 +104,7 @@ Revisar MDL antes del lanzamiento en España y el EEE —o en los países que co
 - política y plantillas de respuesta a incidentes;
 - texto aprobado para baja, inactividad, soft delete y purga;
 - criterio sobre anonimización o seudonimización de estadísticas posteriores;
-- checklist jurídico de cambio para relaciones, IA, OAuth y nuevos proveedores.
+- checklist jurídico de cambio para ampliaciones relacionales, IA, Google OAuth y nuevos proveedores;
 - disclosure de Sign in with Apple en política pública y App Store Privacy, incluyendo Private Relay, revocación, conservación técnica y proveedor/transferencias.
 
 ## 7. Evidencia que ingeniería y operaciones deben aportar
@@ -121,6 +121,7 @@ Revisar MDL antes del lanzamiento en España y el EEE —o en los países que co
 - lista de personal con acceso, roles, MFA y trazabilidad;
 - proveedores contratados, regiones, DPA, subencargados y transferencias;
 - prototipos o capturas de registro, consentimiento, recovery, borrado, baja e inactividad;
+- evidencia E2E saneada de que un `sub` Apple nuevo con email coincidente, y otro con Private Relay/email distinto, sólo vinculan tras acreditar la cuenta MDL existente y conservan su mismo `User`/Vault; sin alta, sesión o namespace paralelo antes de esa acreditación;
 - decisión técnica implementada para estadísticas posteriores a la baja;
 - simulación del procedimiento de derechos e incidentes.
 
@@ -148,5 +149,7 @@ No usar sin calificación profesional expresiones como “completamente anónimo
 - AEPD, [realización de evaluaciones de impacto](https://www.aepd.es/derechos-y-deberes/cumple-tus-deberes/medidas-de-cumplimiento/realizacion-de-evaluaciones-de).
 - AEPD, [lista de tratamientos que requieren EIPD conforme al artículo 35.4](https://www.aepd.es/sites/default/files/2019-09/listas-dpia-es-35-4_0.pdf).
 - Comisión Europea, [gestión de solicitudes de ejercicio de derechos](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/dealing-requests-individuals_en).
+- Apple, [gestión de bajas y revocación de tokens en Sign in with Apple](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple).
+- Apple, [procesamiento de cambios en cuentas de Sign in with Apple](https://developer.apple.com/documentation/signinwithapple/processing-changes-for-sign-in-with-apple-accounts).
 
 Las referencias orientan el encargo y deben contrastarse con legislación nacional, autoridades competentes y países reales de lanzamiento.

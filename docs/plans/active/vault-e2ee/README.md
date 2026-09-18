@@ -1,5 +1,7 @@
 # Private Journal Vault (E2EE)
 
+> **Autoridad funcional:** [Vault](../../../rules/VAULT.md), [Baja y ciclo de vida](../../../rules/DATA_LIFECYCLE.md) y [Tareas automáticas y plazos](../../../rules/DATA_LIFECYCLE.md#tareas). Las referencias históricas de ejecución de este plan no establecen requisitos de compatibilidad para el lanzamiento. Baja de cuenta conserva estructura seudonimizada y destruye contenido privado según ese catálogo; no se equipara al borrado manual del Crush.
+
 > **Estado:** activo. El baseline de cuentas nuevas, el borrado dirigido de experiencia/relación, `API-14`, `iOS-09.8`, `API-14R`, `iOS-09.8R`, `iOS-09.8S`, `iOS-09.8U`, `iOS-09.8V`, `API-14S` e `iOS-09.8W` están validados. La migración física del único usuario legacy terminó con el Vault validado/activado y el historial se recuperó correctamente en entornos limpios por contraseña y por frase de 24 palabras. `CROSS-02` y los backups coordinados de base de datos y objetos Vault están validados. `API-05.3b` está desplegada y `iOS-09.8T-R` + `CROSS-03` están validadas físicamente con un único dispositivo activo: las respuestas funcionales ya no traen contenido privado y iOS lo resuelve sólo desde Vault. Los cortes `API-15A`, `API-16` y `API-16b` retiraron las columnas privadas legacy de producción; cualquier cleanup restante debe tener autorización destructiva separada.
 > **Proyectos:** Product, API e iOS.
 
@@ -41,7 +43,7 @@ Fuera de alcance:
 | Recovery del historial legacy | Validado | Contraseña y frase de 24 palabras reconstruyen el historial migrado en entornos limpios. |
 | Outputs/inputs privados de API | Validados físicamente | `API-05.3b` retiró los campos privados del contrato; `API-15A`, `API-16` y `API-16b` retiraron también sus columnas legacy en producción. Los bindings de API-13 permanecen. |
 | Compatibilidad iOS con el corte privado (`CROSS-03`) | Validada físicamente | Listado, Home, perfil y Timeline toleran su ausencia en HTTP y resuelven nombre/lugar/descripción/nota sólo desde el Vault local válido. |
-| Actividad reciente de Home | Implementada; validación física pendiente | API registra las altas confirmadas de Crush, Experience y una Relationship posterior, conserva sólo referencias estructurales y no duplica la relación inicial. Editar una Relationship existente —aunque cambie `state_id`— no genera actividad, conforme a `PRODUCT.md` §8.4. La cobertura automatizada de `API-PENDING-05` está completa; queda comprobar el feed físicamente tras despliegue. |
+| Actividad reciente de Home | Implementada; validación física pendiente | API registra las altas confirmadas de Crush, Experience y una Relationship posterior, conserva sólo referencias estructurales y no duplica la relación inicial. Editar una Relationship existente —aunque cambie `state_id`— no genera actividad, conforme a [Actividad de Home](../../../rules/TIMELINE.md#home). La cobertura automatizada de `API-PENDING-05` está completa; queda comprobar el feed físicamente tras despliegue. |
 | Columnas privadas legacy de API | Validadas físicamente | `secure_description` y las 13 columnas restantes de contenido privado ya no existen en producción; sus datos residen exclusivamente en Vault. La recuperación de datos previos sólo es posible desde los snapshots. |
 | Superficie Debug de migración legacy | Implementada; pendiente de integración remota | `iOS-09.8T-R` retira el botón Debug y los componentes exclusivos de la operación única. |
 | Alta normal independiente de migración legacy | Implementada; pendiente de validación física | `VaultAccountSetupCoordinator` sustituyó el pipeline legacy: inicializa/activa/sincroniza por contratos normales y no llama a rutas de migración única. |
@@ -133,7 +135,7 @@ Las columnas permanecen todavía como red de seguridad; no se vacían en esta fa
 
 Si falta cualquier binding requerido del Crush o de su grafo de experiencias y relaciones, API rechaza el borrado integral completo sin mutación parcial; el retry sólo procede después de reparar la inconsistencia.
 
-Al borrar el Crush completo no se reabre una relación anterior; la reapertura queda limitada al borrado individual de una relación.
+El borrado integral de Crush sigue RP-DEL-001..005. La corrección de un hito y el borrado de un período siguen RP-HIT-001..013; ningún borrado de período reabre automáticamente uno anterior.
 
 Los bindings del grafo se conservan sólo durante el soft delete y la ventana de retry/purga; se eliminan cuando la purga física de todas sus revisiones termina, no durante la baja de cuenta.
 

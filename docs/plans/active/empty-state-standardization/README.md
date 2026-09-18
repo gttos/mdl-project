@@ -9,6 +9,11 @@
 > **Proyecto:** iOS
 > **Ventana prevista:** después de la beta de octubre de 2026 y antes del lanzamiento de enero de 2027
 
+> **Hallazgo físico pendiente de decisión pre-beta:** al abrir la lista de Crushes sin conexión, la
+> carga remota vacía el contenido en memoria y presenta un alert modal genérico. No es un empty state
+> válido. Si se corrige antes de beta, debe ser un correctivo acotado de error offline; si se difiere,
+> queda incorporado a IOS-02 y no se mezcla con Relationship.
+
 ## Objetivo
 
 Reemplazar los estados vacíos ad hoc de las superficies activas de iOS por un componente visual coherente, localizado, accesible y con una acción contextual cuando el usuario pueda resolver el vacío.
@@ -31,6 +36,11 @@ Fuera de alcance:
 ## Comportamiento esperado
 
 Todos los estados usan `MDLEmptyStateView` con título, mensaje, icono y CTA opcional. Los errores de red continúan usando el componente de error y nunca aparecen al mismo tiempo que un empty state.
+
+En la lista, un fallo de refresh con contenido ya cargado conserva ese contenido y muestra feedback
+offline no bloqueante. Un primer load sin datos confirmados muestra un error inline con Reintentar;
+nunca un alert modal simultáneo con un vacío ni un mensaje que trate la falta de API como cuenta sin
+Crushes.
 
 | ID | Contexto | Acción principal |
 |---|---|---|
@@ -71,6 +81,7 @@ vacía de soluciones actuales.
 - [ ] Las once variantes usan el componente común en las superficies activas.
 - [ ] Cada CTA ejecuta la acción contextual correcta.
 - [ ] Error, loading, vacío y contenido son mutuamente coherentes.
+- [ ] La lista conserva contenido previamente cargado ante un fallo de refresh y usa error inline en el primer load offline.
 - [ ] Los textos existen en español e inglés y no están hardcodeados.
 - [ ] VoiceOver y Dynamic Type funcionan sin pérdida de acciones o contenido.
 - [ ] El grid de redes mantiene enlaces e indicadores actuales y reduce la altura de la tarjeta.

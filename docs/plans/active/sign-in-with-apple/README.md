@@ -1,9 +1,11 @@
 # Sign in with Apple para la beta
 
-> **Estado:** API-APPLE-01 a 04 e iOS-APPLE-01 a 04 están implementadas; el alta Apple real, la capability/provisioning y la baja con Vault activo están validadas físicamente. La retención, el gate de disponibilidad y el diagnóstico JWK de API-APPLE-05 también están implementados. No queda una fase de código conocida: antes de cerrar permanecen el despliegue de API-APPLE-05, la matriz E2E restante (vínculo, revocación, relay y webhook reales) y los gates de configuración, Legal y disclosure público.
+> **Definición funcional vigente:** [Acceso con Apple](../../../rules/ACCOUNT.md#apple). Están aprobados los recorridos de [cuenta Apple a email y contraseña](../../../rules/ACCOUNT.md#apple-a-email) y de [cuenta con email y contraseña a Apple](../../../rules/ACCOUNT.md#email-a-apple). Su implementación completa está pendiente; la evidencia técnica de partes existentes no acredita estos recorridos completos. `DEC-01` queda limitada al tratamiento de dos cuentas MDL distintas ya creadas. Esta revisión documental no inicia una fase de código ni acepta implementación.
+
+> **Estado:** API-APPLE-01 a 04, iOS-APPLE-01/02/04 e iOS-APPLE-03 en su ruta `linkRequired` están implementadas; el alta Apple real, la capability/provisioning y la baja con Vault activo están validadas físicamente. La retención, el gate de disponibilidad y el diagnóstico JWK de API-APPLE-05 también están implementados. `IOS-APPLE-03R` incorporó la acción manual de vínculo para Private Relay/email distinto y quedó validada por build y pruebas dirigidas. Antes de la matriz E2E anti-duplicación falta comprobarla en dispositivo. Después permanecen el despliegue de API-APPLE-05, revocación, relay y webhook reales, y los gates de configuración, Legal y disclosure público.
 > **Prioridad:** requisito de salida de la beta iOS
 > **Proyectos:** API e iOS
-> **Última actualización:** 2026-09-10
+> **Última actualización:** 2026-09-14
 
 ## Objetivo
 
@@ -25,9 +27,10 @@ Permitir que una persona cree o abra su cuenta MDL mediante Sign in with Apple d
 - Botón nativo **Continuar con Apple** visible en la superficie de acceso no autenticada y en la entrada de registro.
 - Autenticación nativa con `AuthenticationServices`, nonce criptográfico y envío de credenciales al backend.
 - Verificación exclusiva en API de la identidad y autorización entregadas por Apple.
-- Creación de un `User` nuevo con fecha de nacimiento, mayoría de edad y aceptaciones legales vigentes.
+- Creación de un `User` nuevo con los datos de nacimiento definidos en `RP-CUE-001`/`RP-APL-005`, mayoría de edad y aceptaciones legales vigentes; la adaptación al año se ejecuta en [Información del usuario](../user-information/README.md).
 - Inicio de sesión de una identidad Apple ya vinculada.
 - Vinculación explícita con una cuenta MDL existente, incluso cuando Apple usa Hide My Email o un email diferente.
+- Incorporación del acceso por email y contraseña a una cuenta creada con Apple, conforme al recorrido canónico, conservando la misma cuenta y Vault.
 - Integración con verificación de email, sesión de siete días, cambio de cuenta, Vault y App Lock.
 - Revocación, baja de cuenta, limpieza de credenciales y eventos técnicos mínimos.
 - Configuración operativa necesaria en Apple Developer, Private Email Relay y secretos de API.
@@ -45,66 +48,29 @@ Fuera de alcance:
 
 ## Reglas compartidas
 
-### Identidad y cuenta canónica
+La fuente única es [Acceso con Apple](../../../rules/ACCOUNT.md#apple), `RP-APL-001..031`, junto con [Cuenta](../../../rules/ACCOUNT.md), [Baja](../../../rules/DATA_LIFECYCLE.md#baja) y [Retención](../../../rules/DATA_LIFECYCLE.md#plazos).
 
-- La cuenta canónica sigue siendo `User`; Sign in with Apple agrega un método de autenticación y nunca crea un segundo perfil/Vault para el mismo vínculo explícito.
-- La identidad Apple se reconoce por el `sub` verificado y su issuer/audience, no por el email ni por el identificador que afirme el cliente.
-- Un `sub` Apple sólo puede estar vinculado a un `User`, y un `User` sólo puede tener una identidad Apple activa.
-- El email sigue siendo el email primario de la cuenta. Cambiarlo después no rompe la vinculación Apple.
-- Una cuenta creada con Apple puede no tener contraseña. Puede establecer una mediante el flujo existente de recuperación por email; iOS no ofrece cambio de contraseña ni login biométrico basado en credenciales hasta que exista una contraseña MDL.
+| Tema | Referencia |
+|---|---|
+| Identidad, validación y unicidad | RP-APL-001..004 |
+| Registro, email Apple sin OTP, continuación y cancelación | RP-APL-005..012 |
+| Sesión, minimización, contraseña y cambio de email | RP-APL-013..016 |
+| Métodos de acceso a una misma cuenta | RP-APL-017..019 |
+| Cuenta Apple a email y contraseña | RP-APL-015..016; RP-APL-026 |
+| Cuenta con email y contraseña a Apple | RP-APL-027..031 |
+| Dos cuentas MDL ya creadas | DEC-01 |
+| Revocación, notificaciones y disponibilidad | RP-APL-020..025 |
+| Baja e intentos de revocación | RP-BAJ-016; RP-AUT-005..007 |
 
-Esta iniciativa reemplaza durante la transición el requisito de contraseña de `PRODUCT.md` BR-3.01/BR-3.04 únicamente para el canal Apple. Fecha de nacimiento, mayoría de edad y aceptación legal siguen siendo obligatorias.
+### Recorridos definidos y ejecución pendiente
 
-### Inicio de sesión
+Los dos recorridos aprobados se definen únicamente en [Cuenta](../../../rules/ACCOUNT.md#metodos-acceso-apple). La ejecución debe cubrir ambos sentidos, su acceso desde los ajustes cuando corresponda, la verificación de cambios de email y la conservación de la misma cuenta y Vault.
 
-- iOS genera un nonce aleatorio por intento, envía su hash en la solicitud Apple y conserva el valor original sólo en memoria hasta entregarlo a API.
-- iOS envía a API el identity token, el authorization code y el nonce; nunca decide por sí solo que la identidad es válida.
-- API valida firma y rotación de claves, issuer, audience, expiración, nonce, authorization code, `sub` y `email_verified` antes de buscar o mutar una cuenta.
-- Una identidad vinculada a una cuenta activa recibe el mismo token Sanctum de siete días que el login por contraseña.
-- Cancelar el sheet de Apple no crea, vincula ni autentica una cuenta y no muestra un error alarmante.
-- Una credencial inválida, expirada, reutilizada o destinada a otra app falla cerrada con un error saneado y sin sesión parcial.
+Antes de implementar esta ampliación deben reconciliarse los contratos, fases, escenarios y pruebas locales de API e iOS con esas reglas. No se presume cobertura por la existencia de `linkRequired` o `registrationRequired`. La resolución de dos cuentas distintas ya creadas permanece en [DEC-01](../../../rules/ACCOUNT.md#dec-01); no bloquea definir el recorrido normal de una única cuenta.
 
-### Registro con Apple
+## Escenarios de aceptación
 
-- Si el `sub` no está vinculado, API entrega una continuación opaca, de uso único y corta duración; no crea el usuario todavía.
-- La elección inicial «Crear cuenta» o «Iniciar sesión» expresa sólo la intención de entrada; el botón Apple es neutral y API decide el resultado verificable. Si devuelve `registrationRequired`, iOS abre directamente el formulario de fecha de nacimiento y aceptaciones, sin una segunda pantalla de confirmación «Crear cuenta». Si devuelve `linkRequired`, iOS abre directamente la acreditación de la cuenta existente.
-- Cuando una persona con una cuenta MDL preexistente necesite vincular un Apple ID cuyo email no permite a API clasificarla como `linkRequired`, el acceso manual a la acreditación permanece como acción secundaria dentro del formulario Apple de alta; no justifica una pantalla intermedia independiente ni permite merge automático.
-- Crear la cuenta requiere fecha de nacimiento válida, edad mínima de 18 años y aceptación explícita de las versiones vigentes de términos y privacidad.
-- API crea `User`, aceptaciones legales, identidad Apple y sesión en una única operación coherente. Un fallo no deja una cuenta o vinculación parcial.
-- El email verificado por Apple se conserva como email primario, incluida una dirección Private Relay, y nace con `email_verified_at` confirmado; no se envía OTP.
-- Si el token validado no contiene un email utilizable o el claim `email_verified` es falso/ausente, API falla cerrada: no emite continuación, sesión, OTP ni crea una cuenta. Apple entrega el email en el token de identidad y puede entregar una dirección Private Relay; MDL no intenta sustituir esa fuente por un email afirmado por iOS.
-- Por minimización de datos, la continuación Apple no entrega a iOS el email ni la dirección Private Relay. Antes de confirmar el alta, iOS informa sólo que usará el email verificado proporcionado por Apple; no muestra ni persiste su valor. El email permanece dentro de los claims cifrados de API hasta que se complete el alta o vínculo.
-- El nombre que Apple pueda entregar se ignora porque no forma parte de los datos necesarios para el alta MDL.
-
-### Vinculación con una cuenta existente
-
-- MDL nunca vincula automáticamente por coincidencia de email.
-- Desde la continuación Apple, la persona puede indicar el email y contraseña de su cuenta MDL existente. API verifica ambos métodos antes de vincularlos.
-- La vinculación conserva el UUID, email primario, verificación, aceptaciones, token/Vault y todos los datos de la cuenta existente.
-- La dirección entregada por Apple puede diferir del email MDL; Hide My Email no obliga a crear una cuenta duplicada.
-- Una contraseña incorrecta, cuenta inactiva, identidad ya vinculada o carrera concurrente no deja cambios parciales ni revela información adicional sobre otras cuentas.
-
-### Email, sesión y Vault
-
-- Para una cuenta Apple nueva, el claim verificado de Apple satisface el control inicial del email. La iniciativa de verificación de email debe omitir el envío automático de OTP cuando `email_verified_at` ya existe.
-- La alta Apple fija `email_verified_at` y deja `provisional_expires_at` vacío **antes** de despachar el evento de registro; el listener de email no envía OTP y el scheduler de cuentas provisionales no puede seleccionarla.
-- Vincular Apple a una cuenta existente no sustituye su email ni modifica su estado de verificación.
-- Si la persona cambia después el email desde MDL, se aplica el flujo OTP canónico; la identidad Apple permanece por `sub`.
-- El Private Email Relay debe estar configurado y probado antes de depender de emails operativos enviados a direcciones relay.
-- Tras cualquier login/registro/vinculación, iOS guarda únicamente el token MDL, obtiene el perfil y activa el namespace/Vault correcto antes de publicar éxito.
-- Un cambio de cuenta limpia el contexto en memoria y nunca adopta VMK, operaciones pendientes ni fotos de otro usuario.
-- Identity token, authorization code, nonce y tokens Apple no se guardan en UserDefaults ni se imprimen en logs.
-
-### Revocación y baja
-
-- API conserva cifrado el refresh token mínimo necesario para validar/revocar la autorización de Apple; no lo devuelve al cliente.
-- iOS observa el estado de la credencial Apple y su notificación de revocación. Un estado revocado/no encontrado elimina la sesión local y vuelve al acceso no autenticado.
-- API valida las notificaciones server-to-server de Apple, desactiva la identidad afectada y revoca los tokens MDL activos. No elimina automáticamente el diario por una baja o revocación de la cuenta Apple.
-- Una cuenta Apple-only puede recuperar acceso mediante una nueva autorización válida o establecer contraseña mediante el flujo de recuperación del email cuando éste siga disponible.
-- La baja de MDL incluye revocar la autorización Apple, retirar la identidad federada y limpiar el identificador local, además del contrato general de baja/Vault. Un fallo temporal de Apple no restaura la cuenta MDL: tras cinco reintentos rápidos, el token cifrado queda sólo 30 días para un reintento manual autorizado y se elimina definitivamente al vencer ese plazo.
-- Los digests de notificaciones server-to-server Apple se conservan 30 días para deduplicación; el último evento aplicable se conserva únicamente con la identidad Apple activa, para que una notificación tardía no revierta un estado más reciente.
-
-## Escenarios canónicos
+Los escenarios de alta y acceso referencian el catálogo. GWT-APPLE-05/06 cubren parte del recorrido de vinculación; no sustituyen la cobertura pendiente de ambos casos completos de RP-APL-015..019 y RP-APL-026..031. Los recorridos `linkRequired`/`registrationRequired` deben contrastarse con esas reglas antes de aceptar su implementación.
 
 ### GWT-APPLE-01 — Botón requerido en beta
 
@@ -126,7 +92,7 @@ Esta iniciativa reemplaza durante la transición el requisito de contraseña de 
 
 ### GWT-APPLE-04 — Registro incompleto
 
-**Dado** un intento Apple válido sin fecha de nacimiento o aceptaciones válidas
+**Dado** un intento Apple válido sin los requisitos de nacimiento/mayoría de edad de `RP-CUE-001`/`RP-APL-005` o aceptaciones válidas
 **Cuando** se intenta completar el alta
 **Entonces** API rechaza la creación y no persiste usuario, identidad, aceptación ni sesión parcial.
 
@@ -224,6 +190,7 @@ API debe estar desplegada y configurada antes de distribuir una build que muestr
 - [ ] Alta, login y vinculación usan un único `User` y un único namespace/Vault.
 - [ ] API valida code/token/nonce y nunca confía en email o `user` enviados sin firma.
 - [ ] No existe merge automático por email ni duplicado silencioso con Hide My Email.
+- [ ] La matriz E2E anti-duplicación anterior demuestra el mismo `User` y Vault para email coincidente y Private Relay/email distinto.
 - [ ] Mayoría de edad y aceptaciones legales se aplican también al alta Apple.
 - [ ] El email Apple válido nace verificado sin OTP; vincular no cambia el email existente.
 - [ ] La sesión conserva duración, logout, restauración, App Lock y aislamiento actuales.
@@ -239,7 +206,7 @@ API debe estar desplegada y configurada antes de distribuir una build que muestr
 |---|---|---|
 | Product | Contrato Apple implementado; política interna de retención aprobada | disclosure Legal/App Store Privacy antes de activar públicamente |
 | API | API-APPLE-01 a 04 implementadas y desplegadas; retención, disponibilidad segura (`05A`) y diagnóstico JWK opt-in (`05B`) implementados localmente | desplegar `05A/05B`, verificar configuración interna y ejecutar validación E2E/rollout con el flag controlado |
-| iOS | iOS-APPLE-01 a 04 implementadas; alta Apple y baja con Vault activo validadas físicamente | vínculo manual y revocación de credencial en dispositivo; validaciones previas a beta |
+| iOS | `linkRequired`, alta Apple y baja con Vault activo validados parcialmente; `IOS-APPLE-03R` añade el vínculo manual desde `registrationRequired` con build y pruebas dirigidas verdes | ejecutar primero el vínculo anti-duplicación en dispositivo y luego revocación/validaciones previas a beta |
 | Transversal | código principal implementado; beta readiness pendiente | Private Relay/notificaciones y revocación reales, operación de la outbox y disclosure público |
 
 ## Planes locales
@@ -249,7 +216,7 @@ API debe estar desplegada y configurada antes de distribuir una build que muestr
 
 ## Referencias
 
-- [`PRODUCT.md` §3](../../../PRODUCT.md#3-cuenta-autenticación-y-sesión)
+- [Cuenta de usuario](../../../rules/ACCOUNT.md)
 - [`ARCHITECTURE.md` §2-4](../../../ARCHITECTURE.md#2-propiedad-de-datos)
 - [Apple — Authenticating users with Sign in with Apple](https://developer.apple.com/documentation/signinwithapple/authenticating-users-with-sign-in-with-apple)
 - [Apple — AuthenticationServices / credential state](https://developer.apple.com/documentation/authenticationservices/asauthorizationappleidprovider)
@@ -260,4 +227,5 @@ API debe estar desplegada y configurada antes de distribuir una build que muestr
 
 ## Decisión abierta
 
-1. **Revisión Legal previa al rollout:** el inventario y la retención técnica de Apple ya están fijados; faltan aprobación de privacy disclosures, ficha App Store Privacy, proveedor/transferencias y texto público. No bloquea las fases técnicas sin activación, pero sí cualquier rollout público.
+1. **Dos cuentas MDL distintas ya creadas:** resolver [DEC-01 de Cuenta](../../../rules/ACCOUNT.md#dec-01) antes de implementar un tratamiento de esa colisión. Los recorridos normales de una misma cuenta ya están definidos y su implementación completa permanece pendiente.
+2. **Revisión Legal previa al rollout:** el inventario y la retención técnica de Apple ya están fijados; faltan aprobación de privacy disclosures, ficha App Store Privacy, proveedor/transferencias y texto público. No bloquea las fases técnicas sin activación, pero sí cualquier rollout público.

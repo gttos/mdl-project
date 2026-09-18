@@ -1,6 +1,6 @@
 # Arquitectura del sistema MDL
 
-Este documento es la fuente de verdad de la arquitectura transversal estable. No contiene planes de implementación ni historial de decisiones. Las reglas de uso están en [`PRODUCT.md`](PRODUCT.md), los requisitos jurídicos en [`legal/`](legal/README.md) y el trabajo todavía abierto en [`plans/active/`](plans/active/).
+Este documento describe la arquitectura transversal. El catálogo funcional, incluidas las decisiones con implementación pendiente, se organiza por dominio en `rules/`, con índice en [`PRODUCT.md`](PRODUCT.md); los requisitos jurídicos en [`legal/`](legal/README.md) y la evidencia de ejecución en los planes activos. Una descripción técnica anterior no redefine una regla del catálogo.
 
 ## 1. Componentes
 
@@ -24,14 +24,14 @@ No es un monorepo: cada proyecto de código tiene su propio repositorio y ciclo 
 | VMK y material de descifrado | Dispositivo/encapsulación E2EE | Nunca se envía una VMK en claro a la API. |
 | Proyección de cambios pendientes | Memoria del cliente, reconstruida desde Vault local | No es una segunda base persistente. |
 | Fotos del crush en la beta | Almacenamiento local del cliente | Sin backup remoto vigente. |
-| Reglas funcionales | `product/docs/PRODUCT.md` y planes maestros activos | Los proyectos consumidores no las redefinen. |
+| Reglas funcionales | `product/docs/rules/`, con índice en `product/docs/PRODUCT.md` | Los planes referencian IDs y mantienen ejecución/evidencia; los consumidores no las redefinen. |
 | Requisitos jurídicos | `product/docs/legal/` | Legal se mantiene modular y separado. |
 
 ### 2.1 Entidades principales
 
 | Entidad | Propósito | Nota |
 |---|---|---|
-| `User` | Cuenta autenticada | Email normalizado y legible para API; teléfono cifrado a nivel de aplicación con `APP_KEY`; ninguno pertenece al Vault ni es E2EE. |
+| `User` | Cuenta autenticada | Cuenta fuera del Vault E2EE. El contrato objetivo de [Cuenta](rules/ACCOUNT.md) conserva el email cifrado por el servidor, la fecha completa de nacimiento declarada y los IDs opcionales de género y país; implementación pendiente en [Información del usuario](plans/active/user-information/README.md). |
 | `FederatedIdentity` | Método de autenticación externo vinculado explícitamente a un `User` | Apple se identifica por `sub` verificado, no por email; los tokens de revocación permanecen cifrados y sujetos a la retención de `legal/04_MDL_Ciclo_Vida_Retencion_Derechos.md`. |
 | `Crush`, `Experience`, `Relationship` | Datos estructurales del diario | contenido íntimo asociado vive en `VaultBlob`, no en columnas propias — ver §2. |
 | `Vault` | Contenedor E2EE de una cuenta | estado y versión de cripto. |
@@ -56,7 +56,7 @@ No existe entidad `File`: se eliminó de la base en julio de 2026 por no tener n
 
 ## 4. Flujo de lectura
 
-1. El cliente nativo autentica la sesión y consulta el estado de verificación de email que expone API.
+1. El cliente nativo autentica la sesión y consulta el estado de acceso que expone API: email/OTP o identidad Apple acreditada conforme a [Cuenta de usuario](rules/ACCOUNT.md).
 2. Una sesión provisional sin email verificado sólo puede mostrar y usar el flujo de verificación; no resuelve el namespace ni el estado del Vault.
 3. Tras verificar el email, el cliente obtiene el perfil estructural y resuelve el namespace y el estado del Vault.
 4. Descarga inventario/ciphertext cuando corresponde y verifica versiones.
@@ -87,7 +87,7 @@ Cada escritura estructural reserva un único crush y uno de estos dominios:
 - `profile`: edición del perfil del crush.
 - `timeline`: creación o edición que altera experiencias/relaciones cronológicas.
 
-El conflicto se evalúa dentro del mismo crush. Un pendiente de A nunca bloquea ni aparece en B. Las operaciones legacy sólo reciben scope cuando puede derivarse de su snapshot cifrado de forma exacta; de lo contrario quedan visibles para revisión y no se ejecutan automáticamente.
+El conflicto se evalúa dentro del mismo crush según `RP-DUR-006..009`. Los snapshots incompatibles fallan cerrados; no se conserva una política runtime alternativa para operaciones anteriores al contrato de lanzamiento.
 
 ## 7. Fechas y cronología
 
@@ -132,8 +132,8 @@ La columna Estado refleja la evidencia vigente de API/iOS. Android permanece pen
 | Amenaza | Mitigación | Estado |
 |---|---|---|
 | Exposición de contenido íntimo (nombre/contacto/redes/cumpleaños de crush, texto de experiencia/relación) | Vault E2EE: cifrado en el dispositivo, el servidor nunca ve el plaintext | Implementado |
-| Exposición del email de cuenta | Minimización; TLS; acceso restringido; exclusión de logs; cifrado de almacenamiento y backups | Sin cifrado de campo por diseño; minimización en los flujos revisados; controles de infraestructura pendientes de evidencia operativa |
-| Exposición del teléfono de cuenta | Cifrado de campo con `APP_KEY`; TLS; acceso restringido; cifrado de almacenamiento y backups | Cifrado de campo implementado; configuración efectiva de infraestructura pendiente de evidencia operativa |
+| Exposición del email de cuenta | Cifrado de campo en servidor, búsqueda protegida, TLS, acceso restringido y exclusión de logs | Cifrado de campo y búsqueda pendientes en `user-information`; controles de infraestructura pendientes de evidencia operativa |
+| Ampliación accidental del perfil de cuenta | Inventario cerrado de Cuenta; fecha de nacimiento declarada asociada a la fecha del alta | Alineación de persistencia y contratos pendiente en `user-information`; los campos autorizados requieren controles de acceso y observabilidad |
 | Acceso no autorizado | Bearer token + autorización por propietario en cada ruta | Implementado |
 | Enumeración de cuentas en recuperación de contraseña | Respuesta pública genérica al solicitar, verificar o usar un OTP; detalle sólo en observabilidad saneada | BR-3.16 implementada y cubierta por pruebas HTTP; el bloqueo conserva su efecto interno | Implementado |
 | Fuerza bruta | Rate limiting por ruta y usuario/IP | Limiters autenticados y de blobs restaurados desde configuración; la validación de volumen real de sync de Vault queda pendiente | Implementado con validación operativa pendiente |
@@ -155,6 +155,6 @@ El detalle técnico de mitigación (headers, límites exactos, EXIF, backups del
 
 - Product define **qué** debe ocurrir y el contrato compartido.
 - API/iOS/Android/LLM documentan **cómo** lo implementan localmente.
-- Una regla no se copia en planes locales: se referencia por sección o escenario del plan maestro.
-- Sólo permanecen planes activos. Al terminar, el estado estable se integra aquí o en `PRODUCT.md` y el plan se elimina.
+- Una regla se define en el documento de su dominio en `rules/` y se referencia por ID desde el índice `PRODUCT.md`; los planes maestros/locales mantienen escenarios, ejecución y evidencia sin otro catálogo funcional.
+- Sólo permanecen planes activos. Al terminar, las reglas estables se integran en su documento de `rules/` y el detalle técnico aquí o en el documento técnico correspondiente; el plan se elimina.
 - Git conserva la historia; no se crean decision logs, auditorías, worklogs, checkpoints ni carpetas `completed`/`archived` como memoria paralela.

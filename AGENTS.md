@@ -4,15 +4,15 @@ Estas reglas se aplican por igual a Codex, ChatGPT, Claude Code y cualquier otro
 
 ## Autoridad documental
 
-- [`docs/PRODUCT.md`](docs/PRODUCT.md): comportamiento estable y reglas funcionales.
+- [`docs/PRODUCT.md`](docs/PRODUCT.md): catálogo único de reglas funcionales, incluidas decisiones cuyo código está pendiente. Cada regla tiene ID; definirla no certifica su implementación. Las decisiones abiertas se identifican en el mismo archivo.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): arquitectura transversal estable.
-- [`docs/VAULT.md`](docs/VAULT.md), [`docs/TIMELINE.md`](docs/TIMELINE.md), [`docs/STATISTICS.md`](docs/STATISTICS.md): subsistemas con complejidad propia — misma autoridad que `PRODUCT.md`/`ARCHITECTURE.md`, separados para no perder profundidad en un resumen. No crear un cuarto archivo de este tipo sin verificar primero que el tema realmente tiene un cluster propio de decisiones/riesgo, no sólo volumen.
+- [`docs/VAULT.md`](docs/VAULT.md), [`docs/TIMELINE.md`](docs/TIMELINE.md), [`docs/STATISTICS.md`](docs/STATISTICS.md): detalle de subsistemas y referencias al catálogo único; no mantienen reglas funcionales alternativas ni fórmulas duplicadas. No crear un cuarto catálogo por dominio.
 - [`docs/legal/`](docs/legal/README.md): documentos jurídicos modulares; no se consolidan ni modifican sin alcance legal explícito.
 - `docs/plans/active/<feature>/README.md`: una única feature maestra por iniciativa activa.
 
 [`docs/product/business-blueprint.md`](docs/product/business-blueprint.md) es un artefacto de negocio mantenido directamente por el usuario. Los agentes pueden leerlo para detectar conflictos, pero no lo corrigen, resumen ni reestructuran sin una solicitud explícita. Puede conservar referencias históricas mientras el usuario lo termina; eso no convierte esas referencias en fuentes de autoridad ni autoriza a modificar el blueprint durante una consolidación general.
 
-Si una regla estable contradice un plan activo, el plan registra la transición y debe indicar qué se reemplazará. Si un plan local contradice Product, Product prevalece.
+Las decisiones funcionales se incorporan primero a `PRODUCT.md`; el plan activo registra su ejecución y escenarios por ID. Si una definición anterior de un plan contradice el catálogo, debe reconciliarse antes de implementar esa parte. Si un plan local contradice Product, Product prevalece. Esto no modifica la autoridad jurídica de Legal.
 
 Legal es autoridad en privacidad, retención, derechos y cumplimiento. Una contradicción entre Product/código y Legal no se resuelve por jerarquía automática: se documenta junto a la regla afectada y se eleva a revisión humana/legal.
 

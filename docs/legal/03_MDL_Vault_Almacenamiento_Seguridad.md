@@ -1,12 +1,12 @@
 # 3. Vault, almacenamiento y seguridad
 
-> Modelo objetivo de lanzamiento a 2 de septiembre de 2026. Se redacta con Vault E2EE terminado, sin columnas ni contratos funcionales legacy para contenido privado. No equivale a auditoría criptográfica, certificación ni evidencia de despliegue.
+> Modelo de la beta de lanzamiento a 14 de septiembre de 2026. El Vault E2EE opera sin columnas ni contratos funcionales legacy para contenido privado. No equivale a auditoría criptográfica, certificación ni evidencia de despliegue.
 
 ## 1. Garantía central
 
 iOS genera una VMK aleatoria de 32 bytes por Vault y cifra el contenido privado con AES-256-GCM antes de transferirlo. API y S3 conservan ciphertext, encapsulaciones y metadata necesarias, sin VMK en claro ni una operación de descifrado.
 
-En el modelo final, nombre/contacto/redes/cumpleaños del crush, lugar/descripción de experiencias y nota de cierre no se aceptan ni devuelven en rutas funcionales y no permanecen en columnas legacy.
+En la beta, nombre/contacto/redes/cumpleaños del crush, lugar/descripción de Experiences, nota de cierre y explicaciones relacionales libres no se aceptan ni devuelven en rutas funcionales y no permanecen en columnas legacy.
 
 Una exposición aislada de RDS/S3 no debería revelar ese plaintext sin acceso adicional a la VMK o a material suficiente de recovery. Esta frase describe el límite arquitectónico; la evaluación real de un incidente debe considerar configuración, claves, dispositivo, encapsulaciones, secreto elegido y posibilidad de combinar fuentes.
 
@@ -14,9 +14,9 @@ Una exposición aislada de RDS/S3 no debería revelar ese plaintext sin acceso a
 
 | Protegido por E2EE | No protegido por E2EE |
 |---|---|
-| nombre, contacto, redes y cumpleaños del crush | email/teléfono y perfil de la cuenta |
+| nombre, contacto, redes y cumpleaños del crush | email/teléfono, perfil de cuenta e identidad federada Apple |
 | lugar y descripción de experiencias | IDs, fechas, estados, ratings, rasgos y asociaciones |
-| nota de cierre y notas seguras | match status, estadísticas y metadata Vault |
+| nota de cierre, explicación libre de “Otro” y notas seguras | fases, etiquetas, motivos catalogados, `everMatched`, estadísticas y metadata Vault |
 | snapshots e intenciones privadas cifradas | IP, user agent, rutas, trazas y eventos de seguridad |
 | objeto S3 frente a lectura sin clave | fotos locales, salvo controles propios del dispositivo |
 
@@ -42,7 +42,7 @@ La contraseña/frase es un secreto de alto impacto. El soporte nunca debe pedirl
 
 ## 4. Unidad de cifrado y versionado
 
-- Un blob `text` contiene el snapshot privado completo de un crush, experiencia o relación.
+- Un blob `text` contiene el snapshot privado completo de un crush, Experience o período relacional.
 - La identidad lógica es `(entryType, entityId, revision)`; `crushId` sólo asocia.
 - Editar conserva tipo e ID e incrementa la revisión.
 - La revisión nueva se sube, descarga/verifica y confirma antes de retirar la anterior.
@@ -81,7 +81,7 @@ La beta usa un dispositivo activo por Vault. Después de recovery, el dispositiv
 
 ## 7. Borrado y retención
 
-### 7.1 Experiencia o relación
+### 7.1 Experience o período relacional
 
 1. iOS persiste la intención de borrado.
 2. Emite una única petición funcional.
@@ -91,13 +91,15 @@ La beta usa un dispositivo activo por Vault. Después de recovery, el dispositiv
 
 El éxito visible significa borrado funcional confirmado, no destrucción física instantánea.
 
+Eliminar una Experience vinculada elimina su asociación pero conserva el hito y el historial relacional. El período inicial no se elimina de forma independiente; sólo el último período cerrado y no inicial admite borrado correctivo, y nunca reabre ni modifica el anterior.
+
 ### 7.2 Crush
 
 El borrado coordina crush, experiencias, relaciones, bindings, todas las revisiones remotas, entries/notas locales e imágenes bajo `LocalMedia/{crushId}`. No debe sobrevivir una carpeta de fotos o blob activo sin entidad.
 
 ### 7.3 Cuenta
 
-`DELETE /users` coordina, como una única operación atómica y fail-closed, cuenta, sesiones, estructura, Vault y fotos: sólo responde éxito cuando el estado remoto queda coherente, y cualquier fallo revierte por completo. Los blobs entran en soft-delete inmediato y siguen la misma ventana de purga a siete días que el borrado dirigido (§7.1); los bindings se conservan sólo hasta completar esa purga. Encapsulaciones, devices y recovery keys se invalidan/eliminan de inmediato. iOS elimina Keychain, SQLite, preferencias sensibles y fotos locales sólo después de confirmar el éxito remoto. La estructura que se pretenda conservar para estadísticas se trata según la estrategia aprobada; no se llama anónima por mera sustitución de identificadores directos.
+`DELETE /users` coordina, como una única operación atómica y fail-closed, cuenta, sesiones, estructura, Vault y fotos: sólo responde éxito cuando el estado remoto queda coherente, y cualquier fallo revierte por completo. Los blobs entran en soft-delete inmediato y siguen la misma ventana de purga a siete días que el borrado dirigido (§7.1); los bindings se conservan sólo hasta completar esa purga. Encapsulaciones, devices y recovery keys se invalidan/eliminan de inmediato. iOS elimina Keychain, SQLite, preferencias sensibles y fotos locales sólo después de confirmar el éxito remoto. La estructura autorizada para estadísticas se desidentifica, permanece sometida a su calificación jurídica y no se llama anónima por mera sustitución de identificadores directos.
 
 No existe una operación de reset de Vault independiente de la baja: recovery por contraseña o por frase de 24 palabras es el único mecanismo para recuperar acceso manteniendo la cuenta.
 
@@ -127,7 +129,7 @@ La ventana de siete días no describe por sí sola RDS snapshots, versionado S3,
 
 | Amenaza | Consecuencia | Salvaguarda o respuesta |
 |---|---|---|
-| takeover de cuenta sin secreto Vault | acceso a estructura/metadata; posible intento de recovery | MFA/protecciones futuras, rate limits, revocación y alertas |
+| takeover de cuenta sin secreto Vault | acceso a estructura/metadata; posible intento de recovery | verificación de identidad, rate limits, revocación y alertas |
 | dispositivo desbloqueado comprometido | acceso potencial a plaintext y fotos | App Lock, Keychain, file protection, revocación y guía de dispositivo |
 | secreto de recovery expuesto | descifrado potencial del Vault afectado | educación, no solicitar secreto, respuesta/rotación diseñada |
 | RDS expuesto | cuenta, estructura, inferencias, metadata y encapsulaciones | cifrado de storage, mínimo privilegio, segmentación, auditoría |
@@ -137,8 +139,9 @@ La ventana de siete días no describe por sí sola RDS snapshots, versionado S3,
 | logs/Sentry con payload | exposición de contenido o secretos | allowlist, scrubbing, tests y monitorización |
 | restauración de backup | reaparición de datos borrados | inventario, procedimiento de restauración y repurga |
 | dos dispositivos activos | conflicto, revisión perdida o estado divergente | restricción de beta y sustitución explícita |
+| credencial o secreto Apple expuesto | acceso federado, correlación de identidad o imposibilidad de revocar | cifrado de secretos, validación de firma/nonce/audience, revocación, rotación y logs saneados |
 
-## 10. Controles que deben existir en el cierre
+## 10. Controles del modelo de lanzamiento
 
 - namespace por cuenta y no adopción de VMK residual;
 - cifrado autenticado y VMK fuera del backend;

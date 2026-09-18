@@ -2,17 +2,18 @@
 
 Fuente canónica compartida de MyDuckingLife.
 
-- [Producto y reglas funcionales](docs/PRODUCT.md)
+- [Reglas de producto — índice de documentos por dominio, en revisión](docs/PRODUCT.md)
 - [Arquitectura transversal](docs/ARCHITECTURE.md)
-- [Vault E2EE — contrato estable](docs/VAULT.md)
-- [Timeline y ciclo de vida de crush/experiencia/relación](docs/TIMELINE.md)
-- [Estadísticas e IA](docs/STATISTICS.md)
+- [Vault E2EE — detalle del subsistema](docs/VAULT.md)
+- [Timeline — referencias de dominio y reconstrucción](docs/TIMELINE.md)
+- [Estadísticas e IA — referencias del contrato](docs/STATISTICS.md)
 - [Business blueprint](docs/product/business-blueprint.md) — artefacto mantenido por el usuario; no se modifica por consolidaciones automáticas.
 - [Legal](docs/legal/README.md)
 - [Private Journal Vault — plan activo](docs/plans/active/vault-e2ee/README.md)
 - [Cambios pendientes visibles — plan activo](docs/plans/active/durable-write-feedback/README.md)
 - [Verificación de email — plan activo](docs/plans/active/email-verification/README.md)
 - [Sign in with Apple — plan activo](docs/plans/active/sign-in-with-apple/README.md)
+- [Información de la cuenta de usuario — plan activo](docs/plans/active/user-information/README.md)
 - [Estandarización de empty states (iOS) — plan activo](docs/plans/active/empty-state-standardization/README.md)
 - [Paridad Android — plan activo](docs/plans/active/android-parity/README.md)
 

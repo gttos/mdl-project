@@ -1,6 +1,6 @@
 # 4. Ciclo de vida, conservación y ejercicio de derechos
 
-> Modelo objetivo de lanzamiento a 2 de septiembre de 2026. Los plazos jurídicos, excepciones y lenguaje público deben ser aprobados por la asesoría y contrastados con la configuración real.
+> Modelo de la beta de lanzamiento a 14 de septiembre de 2026. Los plazos jurídicos, excepciones y lenguaje público deben ser aprobados por la asesoría y contrastados con la configuración real.
 
 ## 1. Principios operativos
 
@@ -14,9 +14,9 @@
 
 ## 2. Ciclo de vida
 
-1. **Alta provisional:** API crea la cuenta y el material mínimo de autenticación/verificación; iOS no crea ni sincroniza Vault antes de verificar el email.
-2. **Verificación:** la cuenta provisional sólo accede a verificar email durante siete días desde el alta; reenviar OTPs no extiende ese plazo.
-3. **Uso:** tras verificar, API conserva estructura; iOS puede configurar/descifrar Vault localmente y muestra datos fusionados.
+1. **Alta:** el canal email crea una cuenta provisional con el material mínimo de autenticación/verificación; Sign in with Apple crea una cuenta verificada cuando Apple acredita el email y puede no asignarle contraseña MDL.
+2. **Verificación:** la cuenta provisional sólo accede a verificar email durante siete días desde el alta; cada OTP de seis dígitos dura 15 minutos, admite cinco intentos y aplica un bloqueo de 15 minutos; reenviarlo no extiende el plazo total.
+3. **Uso:** con la identidad verificada, API conserva estructura; iOS configura/descifra el Vault localmente y muestra datos fusionados.
 4. **Rectificación:** una edición crea una revisión cifrada nueva y retira la anterior después de verificarla.
 5. **Archivo:** oculta el crush de la lista activa, sin cambiar su conservación.
 6. **Borrado funcional:** deja de usar o mostrar la entidad tras confirmación y soft-deletea estructura/blobs cuando corresponda.
@@ -36,9 +36,9 @@
 | Intención de revocación Apple completada | sólo hasta confirmar el resultado | nulificar el refresh token y retirar la intención | ejecución idempotente y evidencia técnica mínima |
 | Intención de revocación Apple fallida | 30 días desde el fallo final tras cinco reintentos rápidos | reintento manual autorizado durante la ventana; al vencimiento, eliminación definitiva de fila y token | alerta operativa, tarea de purga y prueba de que la baja MDL no se revierte |
 | Notificación server-to-server Apple procesada | 30 días | purga de digest, tipo y timestamp; el último evento aplicable queda sólo con la identidad activa | deduplicación, orden y protección frente a eventos tardíos |
-| OTP | vigencia corta del flujo | invalidación tras uso, intentos o expiración | plazos exactos y pruning |
+| OTP | 15 minutos por código; máximo 5 intentos y bloqueo de 15 minutos | invalidación tras uso, intentos o expiración | pruning programado y evidencia anti-enumeración |
 | Aceptaciones legales | mientras sea necesario demostrar la versión aceptada | posible conservación probatoria | plazo y datos de contexto mínimos |
-| Estructura activa de crush/experience/relationship | mientras exista la entidad/cuenta | soft delete o desidentificación según flujo | necesidad y finalidad por campo |
+| Estructura activa de Crush/Experience/período e historiales | mientras exista la entidad/cuenta | soft delete o desidentificación según flujo | necesidad y finalidad por campo |
 | Snapshot Vault vigente | mientras exista la entidad privada | soft delete coordinado | acceso, portabilidad y backups |
 | Revisión sustituida | hasta verificar la nueva | cleanup inmediato tras confirmación | SLA y monitorización de huérfanos |
 | Blob soft-deleted | 7 días hasta purga programada | destrucción objeto/fila | ejecución, reintentos, versiones y backups |
@@ -52,7 +52,7 @@
 | Backups RDS/S3 | configuración real | expiración y bloqueo de reactivación | inventario, plazo y procedimiento de restore |
 | Email/SES | entrega, rebote y logs | según proveedor | contenido, retención y subencargados |
 | Feedback de baja | motivo, texto, estado y recibo | puede sobrevivir por finalidad aprobada | necesidad de texto libre, acceso y plazo |
-| Estructura para estadísticas posteriores | por decidir | agregación irreversible o retención seudonimizada | decisión central de Legal/Product |
+| Estructura para estadísticas posteriores | según finalidad y plazo aprobados | desidentificación técnica y exclusión del uso ordinario | calificación jurídica, base, acceso, riesgo de reidentificación y salvaguardas |
 
 Un plazo de código no es automáticamente un plazo legal correcto. Si Legal cambia un plazo, debe cambiar también la configuración, el scheduler, las pruebas y la documentación pública.
 
@@ -76,8 +76,8 @@ Un plazo de código no es automáticamente un plazo legal correcto. Si Legal cam
 
 ### 4.3 Relación
 
-- sólo se elimina si es la última y no es la relación inicial;
-- reabre la relación anterior cuando corresponde;
+- el período inicial no se elimina mediante la acción ordinaria;
+- sólo el último período cerrado y no inicial admite borrado correctivo, y nunca reabre ni modifica el cierre del anterior;
 - soft-deletea todas sus revisiones Vault;
 - no borra una experiencia vinculada salvo que la persona la elimine por separado;
 - la restricción funcional no limita los derechos: una solicitud jurídica requiere un procedimiento distinto del botón ordinario.
@@ -101,7 +101,7 @@ Archivar no ejecuta ninguna de estas acciones.
 
 #### Cuenta provisional sin verificar
 
-Una cuenta provisional sólo puede usar autenticación, cierre de sesión y verificación de email. Si no verifica dentro de siete días desde el alta, se ejecuta la baja aplicable y se elimina el email; no se retiene ni reutiliza para marketing o leads sin una finalidad, base y consentimiento específicos aprobados. El plazo no se renueva al reenviar códigos. La implementación debe demostrar que no se crea Vault antes de una verificación correcta y que una baja de este tipo no deja tokens ni artefactos locales activos.
+Una cuenta provisional sólo puede usar autenticación, cierre de sesión y verificación de email. Si no verifica dentro de siete días desde el alta, se ejecuta la baja aplicable y se elimina el email; no se retiene ni reutiliza para marketing o leads sin una finalidad, base y consentimiento específicos aprobados. El plazo no se renueva al reenviar códigos. El flujo no crea Vault antes de una verificación correcta y la baja no deja tokens ni artefactos locales activos.
 
 La baja se ejecuta como una única operación atómica y fail-closed: sólo se confirma al usuario cuando el estado remoto quedó coherente; un fallo parcial revierte por completo y no deja una baja a medias.
 
@@ -109,9 +109,9 @@ La baja debe:
 
 1. autenticar y confirmar la intención;
 2. crear sólo la evidencia mínima aprobada;
-3. revocar tokens y bloquear nuevo uso;
+3. revocar tokens, bloquear nuevo uso y retirar la identidad Apple vinculada; la revocación frente a Apple se procesa sin restaurar la cuenta si el proveedor falla;
 4. aplicar soft delete inmediato al Vault y a todos sus blobs (misma ventana de siete días que el borrado dirigido de experiencia/relación antes de la purga física) y eliminar de inmediato encapsulaciones, devices y recovery keys; los bindings se conservan sólo hasta completar esa purga;
-5. eliminar Keychain, SQLite, preferencias sensibles y fotos locales accesibles a la app;
+5. eliminar Keychain, SQLite, preferencias sensibles y fotos locales accesibles a la app sólo después de confirmar el resultado remoto;
 6. retirar o desidentificar cuenta y estructura según la estrategia aprobada;
 7. purgar datos temporales y notificar a proveedores cuando corresponda;
 8. emitir una confirmación comprensible que distinga efecto inmediato y expiración de backups.
@@ -124,34 +124,18 @@ Product prevé notificar después de 18 meses sin login y cerrar la cuenta si no
 
 ## 5. “Anonimización” y estadísticas después de la baja
 
-El flujo técnico sobrescribe email/nombre y otros identificadores directos y marca crushes como anonimizados. Las experiencias/relaciones pueden conservar estructura y vínculos. Esa operación puede impedir el uso normal, pero no determina por sí sola anonimato jurídico.
+El flujo técnico sobrescribe email/nombre y otros identificadores directos y marca Crushes como anonimizados. Puede conservar estructura relacional y vínculos únicamente para estadísticas agregadas sin PII, fuera del uso ordinario. Esa operación impide el uso normal, pero no determina por sí sola anonimato jurídico.
 
 Factores de reidentificación a evaluar:
 
 - UUIDs persistentes y relación entre tablas;
 - fechas exactas, país, edad, género y rasgos;
-- secuencias relacionales singulares;
+- secuencias singulares de fases, etiquetas, cierres, períodos e hitos;
 - ratings y actividad;
 - audit/auth/security events conservados;
 - backups o accesos auxiliares capaces de restablecer el vínculo.
 
-Opciones que debe decidir la asesoría con Product:
-
-**A. Agregación irreversible**
-
-- calcular métricas sin identificadores ni secuencias individuales;
-- aplicar umbrales/supresión de celdas raras;
-- eliminar las filas fuente después de verificar el agregado;
-- documentar imposibilidad razonable de reidentificación.
-
-**B. Retención seudonimizada**
-
-- reconocer que continúa siendo dato personal;
-- definir finalidad, base, plazo, acceso y separación de claves/vínculos;
-- excluirlo del uso ordinario y de nuevos fines incompatibles;
-- atender derechos y riesgo de reidentificación.
-
-Hasta escoger y verificar una opción, no prometer conservación “sólo anónima”.
+La asesoría debe calificar la conservación resultante. Mientras no exista una conclusión de anonimización suficientemente respaldada, se trata como seudonimizada y continúa bajo controles de dato personal: finalidad, base, plazo, acceso restringido, separación de vínculos, atención de derechos y evaluación del riesgo de reidentificación. Las salidas estadísticas deben aplicar agregación y supresión de combinaciones raras; no se promete conservación “sólo anónima”.
 
 ## 6. Procedimiento de derechos de la persona usuaria
 

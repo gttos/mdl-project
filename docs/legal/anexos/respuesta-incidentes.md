@@ -1,8 +1,8 @@
 # Anexo. Procedimiento de respuesta a incidentes de privacidad
 
 > **Estado:** base operativa para completar con nombres, contactos, proveedores y criterio jurídico.  
-> **Fecha de corte:** 2 de septiembre de 2026.
-> **Alcance:** cuenta, datos funcionales, Vault, dispositivos, fotografías locales, proveedores, logs, datos conservados tras la baja y backups.
+> **Fecha de corte:** 14 de septiembre de 2026.
+> **Alcance:** cuenta y verificación, identidad Apple, datos funcionales, Vault, dispositivos, fotografías locales, proveedores, logs, datos conservados tras la baja y backups.
 > **Modelo de lanzamiento:** el contenido privado del diario existe sólo en Vault E2EE; la clave de aplicación del backend cifra el teléfono y otros campos expresamente inventariados, no el email ni una segunda copia del contenido Vault.
 
 ## 1. Objetivos
@@ -19,7 +19,8 @@
 - acceso no autorizado a cuenta, API, base de datos, bucket o consola;
 - vulnerabilidad que permita leer o modificar datos de otra cuenta;
 - aparición de nombre, contacto, lugar, descripción o nota de cierre en logs, requests o reportes;
-- exposición de estados, fechas, ratings, asociaciones o secuencias relacionales de otra cuenta;
+- exposición de fases, etiquetas, cierres, historiales, fechas, ratings, asociaciones o secuencias relacionales de otra cuenta;
+- exposición o uso indebido de OTP, continuación Apple, `sub`, Private Relay, credenciales o notificaciones federadas;
 - exposición de VMK, secretos de recuperación, tokens, URLs firmadas o claves administrativas;
 - pérdida, corrupción o borrado indebido de blobs;
 - restauración que reactive datos ya borrados;
@@ -33,14 +34,14 @@
 
 | Clase | Ejemplo | Pregunta inmediata |
 |---|---|---|
-| A. Cuenta/datos funcionales | Acceso a identidad, estados, fechas o valoraciones | ¿Qué cuentas, campos y acciones quedaron expuestos? |
+| A. Cuenta/datos funcionales | Acceso a identidad, verificación, fases, fechas o valoraciones | ¿Qué cuentas, campos y acciones quedaron expuestos? |
 | B. Plaintext privado | Texto descifrado en log, memoria persistida o request | ¿Quién pudo leerlo y durante cuánto tiempo? |
 | C. Ciphertext | Objetos cifrados copiados o publicados | ¿Se expusieron también metadata, encapsulaciones o secretos? |
 | D. Claves/recuperación | VMK, secreto, clave privada o credencial administrativa | ¿Puede revocarse o rotarse sin pérdida de acceso? |
 | E. Metadata | IDs, tamaños, secuencias, devices, IP o patrones | ¿Permite identificar, correlacionar o inferir actividad? |
 | F. Integridad/disponibilidad | Blob corrupto, borrado o recovery incompleto | ¿Existe copia válida y quién perdió acceso? |
 | G. Fotografía local | Acceso desde dispositivo o backup no esperado | ¿MDL controla alguna copia o solo el dispositivo? |
-| H. Proveedor | Brecha, subencargado o región no prevista | ¿Qué contrato, datos, fechas y acciones aplican? |
+| H. Proveedor/identidad federada | Brecha, subencargado, región o evento Apple no previsto | ¿Qué contrato, datos, credenciales, fechas y acciones aplican? |
 
 Una exposición de ciphertext no debe cerrarse automáticamente como inocua. Deben evaluarse algoritmo, claves, calidad del secreto, metadata, capacidad de fuerza bruta, duración de confidencialidad esperada y posibilidad de combinar el evento con otros accesos.
 
@@ -143,11 +144,11 @@ Si la asesoría determina que corresponde comunicar, el texto debe ser claro y c
 
 No debe describirse el contenido como anónimo por estar cifrado ni afirmar que no existe riesgo sin un análisis documentado.
 
-## 9. Escenarios específicos del Vault
+## 9. Escenarios específicos de seguridad
 
 ### Clave de aplicación (`APP_KEY`) comprometida
 
-- Este escenario es distinto de una exposición de Vault: en el modelo final `APP_KEY` cifra el teléfono y cualquier otro campo backend incluido expresamente, no el email ni el contenido privado del diario.
+- Este escenario es distinto de una exposición de Vault: en la beta `APP_KEY` cifra el teléfono y cualquier otro campo backend incluido expresamente, no el email ni el contenido privado del diario.
 - Confirmar de inmediato si la clave expuesta corresponde a producción y si permite descifrado retroactivo de backups o réplicas.
 - Rotar `APP_KEY` requiere re-cifrar todas las columnas afectadas antes de invalidar la clave anterior; planificar esa migración como parte de la preparación, no durante el incidente.
 - Cuantificar cuentas y campos afectados; no asumir que E2EE del diario protege esos datos de cuenta.
@@ -155,11 +156,19 @@ No debe describirse el contenido como anónimo por estar cifrado ni afirmar que 
 
 ### Exposición de estructura relacional
 
-- identificar estados, fechas, ratings, rasgos, asociaciones, match status y correlaciones expuestos;
+- identificar fases, etiquetas, motivos de cierre, historiales, hitos, fechas, ratings, rasgos, asociaciones, `everMatched` y correlaciones expuestos;
 - determinar si permiten inferir vida afectiva o sexual aunque no exista texto Vault;
 - incluir a terceras personas descritas al cuantificar afectados y consecuencias;
 - evaluar secuencias y combinaciones singulares que aumenten el riesgo de reidentificación;
 - tratar la exposición como incidente de datos personales aunque el Vault ciphertext permanezca seguro.
+
+### Credencial Apple, OTP o continuación expuestos
+
+- identificar si el dato permite autenticar, vincular cuentas, consultar el estado federado o revocar una autorización;
+- revocar sesiones MDL afectadas, invalidar OTP/continuaciones y rotar secretos del proveedor cuando corresponda;
+- comprobar firma, `nonce`, audience, uso único, expiración y registros de revocación sin copiar tokens o JWS al expediente;
+- evaluar exposición de email o Private Relay y cualquier correlación con el `sub` protegido;
+- coordinar con Apple o el proveedor de email mediante el canal contractual y conservar sólo evidencia técnica minimizada.
 
 ### Ciphertext sin claves conocidas
 
@@ -215,6 +224,7 @@ El procedimiento no debe pedir al usuario que envíe su frase o contraseña de r
 - contrato y canal urgente por proveedor;
 - simulación anual que incluya datos funcionales, ciphertext y secreto;
 - simulación de exposición de estructura relacional y reidentificación de datos conservados tras la baja;
+- simulación de compromiso de OTP o identidad Apple, incluida revocación y cierre de sesiones;
 - borrador de notificación a autoridad y de comunicación a afectados;
 - verificación del plazo de detección y escalado;
 - seguimiento de acciones correctivas hasta evidencia de cierre.
