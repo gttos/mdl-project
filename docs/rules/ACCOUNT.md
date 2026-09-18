@@ -1,6 +1,6 @@
 # Reglas de producto — Cuenta de usuario
 
-**Estado de revisión: EN REVISIÓN.** Este archivo sólo se marca como finalizado cuando la persona responsable de Producto lo indique expresamente. Ese estado no certifica implementación ni aprobación jurídica.
+**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica.
 
 [Índice de reglas](../PRODUCT.md) · Alta y acceso, verificación, Apple, perfil de la cuenta de usuario, ajustes y recuperación de acceso.
 
@@ -96,9 +96,10 @@ Para este inventario, «legible por la API» significa que el servidor puede int
 <a id="apple-a-email"></a>
 ### Añadir email y contraseña a una cuenta creada con Apple
 
-- **RP-APL-016.** La persona puede conservar el email recibido de Apple o cambiarlo por otro que verifique. El cambio conserva el acceso con Apple.
-- **RP-APL-015.** Una cuenta creada con Apple permite establecer una contraseña MDL mediante la recuperación de contraseña enviada a su email vigente y verificado. La contraseña debe cumplir BR-3.04.
-- **RP-APL-026.** Cambiar o verificar el email no crea una contraseña. El acceso mediante email y contraseña sólo queda disponible después de establecerla.
+- **RP-APL-015.** Una cuenta creada con Apple que todavía no tenga contraseña puede añadir el acceso mediante email y contraseña desde los ajustes de una sesión MDL válida. La sesión acredita la cuenta actual y no se exige volver a autorizar Apple. Si no dispone de una sesión válida, puede establecer la primera contraseña mediante la recuperación enviada al email vigente y verificado, pero ese flujo de recuperación no permite cambiar el email.
+- **RP-APL-016.** Al añadir este acceso, la persona puede conservar el email recibido de Apple o elegir otro. MDL envía siempre un código al email elegido y exige confirmarlo, incluso cuando se conserva exactamente la dirección personal o intermediaria recibida de Apple.
+- **RP-APL-026.** Cambiar o verificar el email mediante el flujo general de cambio de email no crea una contraseña. Añadir el acceso mediante email y contraseña es una acción distinta que debe confirmarse expresamente.
+- **RP-APL-032.** Después de verificar el email elegido y aceptar una contraseña que cumpla BR-3.04, MDL habilita atómicamente ambos datos como método de acceso de la misma cuenta. La operación conserva Apple, el identificador de la cuenta, el Vault y el diario; si falla cualquier parte, no deja cambiado el email ni creada la contraseña. Al completarse, se cierran todas las sesiones conforme a RP-OTP-007.
 
 <a id="email-a-apple"></a>
 ### Vincular Apple a una cuenta MDL existente
@@ -108,6 +109,7 @@ Para este inventario, «legible por la API» significa que el servidor puede int
 - **RP-APL-029.** La vinculación desde «Continuar con Apple» requiere autorizar Apple, acreditar el acceso a la cuenta MDL con su email y contraseña y confirmar la vinculación. Si la persona no recuerda su contraseña, debe recuperarla antes de completar la vinculación.
 - **RP-APL-030.** La vinculación también puede iniciarse desde los ajustes de una sesión MDL abierta. La persona autoriza Apple y confirma que quiere añadirlo a esa cuenta.
 - **RP-APL-031.** Vincular Apple conserva el email MDL y su estado de verificación. Una cuenta cuyo email siga sin verificar mantiene el bloqueo de acceso.
+- **RP-APL-033.** Si la identidad Apple ya está vinculada a otra cuenta MDL, la vinculación se rechaza completa y ninguna de las dos cuentas cambia. MDL no fusiona, absorbe ni transfiere automáticamente cuentas, aunque alguna parezca vacía. La persona debe utilizar la cuenta que ya tiene Apple o eliminar la que no quiera conservar; Apple sólo puede añadirse a otra cuenta después de que el servidor confirme que la identidad ha quedado disponible.
 
 ### Pérdida de autorización o indisponibilidad de Apple
 
@@ -139,6 +141,15 @@ Para este inventario, «legible por la API» significa que el servidor puede int
 - **RP-MAIL-002.** La persona verifica la nueva dirección con un código enviado a ese correo. La dirección anterior permanece activa hasta completar la verificación.
 - **RP-MAIL-003.** Al confirmar el código, la nueva dirección pasa a ser el email verificado de la cuenta. Si la verificación falla, se conserva la dirección anterior.
 - **RP-MAIL-004.** Cambiar el email de MDL conserva el acceso con la cuenta Apple vinculada.
+- **RP-MAIL-005.** Si la nueva dirección ya pertenece a otra cuenta MDL, el cambio se rechaza completo y ninguna de las dos cuentas cambia. MDL no fusiona, absorbe ni transfiere automáticamente cuentas, aunque alguna parezca vacía. La persona debe utilizar la cuenta que ya tiene ese email o eliminar la que no quiera conservar; el email sólo puede añadirse a otra cuenta después de que el servidor confirme que ha quedado disponible.
+
+<a id="contrasena-acceso"></a>
+## Cambio de la contraseña de acceso
+
+- **RP-PWD-001.** Una cuenta que ya tenga contraseña MDL puede cambiarla desde los ajustes de una sesión válida. La persona introduce la contraseña actual, la nueva contraseña y su confirmación; la nueva contraseña debe cumplir BR-3.04.
+- **RP-PWD-002.** Una contraseña actual incorrecta, una confirmación distinta o una nueva contraseña inválida rechazan la operación completa sin modificar la cuenta, la contraseña ni las sesiones.
+- **RP-PWD-003.** Un cambio correcto sustituye únicamente el verificador no reversible de la contraseña. Conserva el email y su verificación, el acceso con Apple, el identificador de la cuenta, el Vault y el diario; después cierra todas las sesiones conforme a RP-OTP-007.
+- **RP-PWD-004.** Una cuenta creada con Apple que todavía no tenga contraseña no utiliza este flujo de cambio. Añade su primer acceso mediante email y contraseña conforme a RP-APL-015, RP-APL-016, RP-APL-026 y RP-APL-032.
 
 <a id="recuperacion-acceso"></a>
 ## Recuperación de la contraseña de acceso
@@ -149,7 +160,7 @@ Para este inventario, «legible por la API» significa que el servidor puede int
 - **BR-3.08.** Se admiten como máximo cinco intentos fallidos de verificación del código. Alcanzado ese límite, la verificación queda bloqueada durante 15 minutos.
 - **BR-3.16.** Un código incorrecto, vencido o bloqueado muestra el mismo mensaje de error.
 - **RP-OTP-005.** Recuperar la contraseña de acceso a MDL no recupera ni reinicia el Vault. La contraseña de acceso y los medios de recuperación del Vault son independientes.
-- **RP-OTP-007.** Al confirmar un cambio o recuperación de la contraseña de acceso a MDL, se cierran todas las sesiones activas de esa cuenta, incluida la sesión actual. La persona debe volver a iniciar sesión.
+- **RP-OTP-007.** Al establecer por primera vez, cambiar o recuperar la contraseña de acceso a MDL, se cierran todas las sesiones activas de esa cuenta, incluida la sesión actual. La persona debe volver a iniciar sesión.
 
 <a id="bloqueo-local"></a>
 ## Bloqueo local de la aplicación
@@ -160,6 +171,4 @@ Para este inventario, «legible por la API» significa que el servidor puede int
 <a id="decisiones-pendientes"></a>
 ## Decisiones pendientes
 
-| ID | Por definir | Decisión ya fijada |
-|---|---|---|
-| <a id="dec-01"></a>DEC-01 | Cómo se resuelve el intento de cambiar el email o vincular Apple cuando esos datos ya están asociados a otra cuenta MDL creada. | Cambiar el email o vincular Apple no fusiona cuentas ni transfiere diarios automáticamente. |
+No hay decisiones funcionales pendientes en este capítulo.

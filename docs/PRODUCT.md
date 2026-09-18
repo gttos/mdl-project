@@ -13,8 +13,8 @@ Legal mantiene su autoridad sobre privacidad, retención, derechos y cumplimient
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| <a id="3-cuenta-autenticación-y-sesión"></a><a id="32-recuperación-de-la-contraseña-de-acceso"></a><a id="36-sign-in-with-apple"></a>[Cuenta de usuario](rules/ACCOUNT.md) | Alta y acceso, verificación, Apple, perfil de la cuenta de usuario, ajustes y recuperación de acceso. | EN REVISIÓN |
-| <a id="4-alta-y-perfil-de-un-crush"></a><a id="41-datos-obligatorios"></a><a id="43-edición-del-perfil"></a><a id="44-archivar-y-eliminar"></a>[Crush y perfil del Crush](rules/CRUSH.md) | Alta, datos y edición del perfil del Crush, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación. | EN REVISIÓN |
+| <a id="3-cuenta-autenticación-y-sesión"></a><a id="32-recuperación-de-la-contraseña-de-acceso"></a><a id="36-sign-in-with-apple"></a>[Cuenta de usuario](rules/ACCOUNT.md) | Alta y acceso, verificación, Apple, perfil de la cuenta de usuario, ajustes y recuperación de acceso. | FINALIZADO |
+| <a id="4-alta-y-perfil-de-un-crush"></a><a id="41-datos-obligatorios"></a><a id="43-edición-del-perfil"></a><a id="44-archivar-y-eliminar"></a>[Crush y perfil del Crush](rules/CRUSH.md) | Alta, datos y edición del perfil del Crush, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación. | FINALIZADO |
 | <a id="6-experiencias"></a><a id="62-edición"></a><a id="63-borrado"></a>[Experiencias](rules/EXPERIENCES.md) | Experiencia inicial y posteriores: datos, fechas, creación, edición, eliminación y vinculación con relaciones. | EN REVISIÓN |
 | <a id="7-relaciones"></a><a id="71-cronología"></a><a id="72-match-status"></a><a id="73-situaciones-y-trayectos-permitidos"></a><a id="74-cierre"></a><a id="75-registrar-corregir-y-eliminar"></a>[Relaciones](rules/RELATIONSHIPS.md) | Situación inicial, períodos, hitos, trayectos permitidos, cierre y corrección o eliminación del último elemento elegible. | EN REVISIÓN |
 | <a id="81-contenido-e-identidad"></a><a id="83-acciones"></a><a id="84-actividad-reciente-de-home"></a>[Timeline y Home](rules/TIMELINE.md) | Presentación de la historia, orden, agrupación, acciones disponibles y actividad reciente de Home. | EN REVISIÓN |
@@ -88,7 +88,6 @@ Definir una regla no demuestra que esté implementada ni permite distribuir una 
 
 | Documento | Decisiones |
 |---|---|
-| [Cuenta de usuario](rules/ACCOUNT.md#decisiones-pendientes) | [DEC-01](rules/ACCOUNT.md#dec-01) |
 | [Experiencias](rules/EXPERIENCES.md#decisiones-pendientes) | [DEC-07](rules/EXPERIENCES.md#dec-07) |
 | [Relaciones](rules/RELATIONSHIPS.md#decisiones-pendientes) | [DEC-06](rules/RELATIONSHIPS.md#dec-06), [DEC-13](rules/RELATIONSHIPS.md#dec-13) |
 | [Vault](rules/VAULT.md#decisiones-pendientes) | [DEC-10](rules/VAULT.md#dec-10) |
