@@ -1,6 +1,6 @@
 # Sign in with Apple para la beta
 
-> **Definición funcional vigente:** [Acceso con Apple](../../../rules/ACCOUNT.md#apple). Están aprobados los recorridos de [cuenta Apple a email y contraseña](../../../rules/ACCOUNT.md#apple-a-email) y de [cuenta con email y contraseña a Apple](../../../rules/ACCOUNT.md#email-a-apple). Su implementación completa está pendiente; la evidencia técnica de partes existentes no acredita estos recorridos completos. `DEC-01` queda limitada al tratamiento de dos cuentas MDL distintas ya creadas. Esta revisión documental no inicia una fase de código ni acepta implementación.
+> **Definición funcional vigente:** [Acceso con Apple](../../../rules/ACCOUNT.md#apple). Están aprobados los recorridos de [cuenta Apple a email y contraseña](../../../rules/ACCOUNT.md#apple-a-email) y de [cuenta con email y contraseña a Apple](../../../rules/ACCOUNT.md#email-a-apple). Su implementación completa está pendiente; la evidencia técnica de partes existentes no acredita estos recorridos completos. Si el método de acceso ya pertenece a otra cuenta MDL, no se fusionan ni transfieren cuentas. Esta revisión documental no inicia una fase de código ni acepta implementación.
 
 > **Estado:** API-APPLE-01 a 04, iOS-APPLE-01/02/04 e iOS-APPLE-03 en su ruta `linkRequired` están implementadas; el alta Apple real, la capability/provisioning y la baja con Vault activo están validadas físicamente. La retención, el gate de disponibilidad y el diagnóstico JWK de API-APPLE-05 también están implementados. `IOS-APPLE-03R` incorporó la acción manual de vínculo para Private Relay/email distinto y quedó validada por build y pruebas dirigidas. Antes de la matriz E2E anti-duplicación falta comprobarla en dispositivo. Después permanecen el despliegue de API-APPLE-05, revocación, relay y webhook reales, y los gates de configuración, Legal y disclosure público.
 > **Prioridad:** requisito de salida de la beta iOS
@@ -48,7 +48,7 @@ Fuera de alcance:
 
 ## Reglas compartidas
 
-La fuente única es [Acceso con Apple](../../../rules/ACCOUNT.md#apple), `RP-APL-001..031`, junto con [Cuenta](../../../rules/ACCOUNT.md), [Baja](../../../rules/DATA_LIFECYCLE.md#baja) y [Retención](../../../rules/DATA_LIFECYCLE.md#plazos).
+La fuente única es [Acceso con Apple](../../../rules/ACCOUNT.md#apple), `RP-APL-001..033`, junto con [Cuenta](../../../rules/ACCOUNT.md), [Baja](../../../rules/DATA_LIFECYCLE.md#baja) y [Retención](../../../rules/DATA_LIFECYCLE.md#plazos).
 
 | Tema | Referencia |
 |---|---|
@@ -56,9 +56,9 @@ La fuente única es [Acceso con Apple](../../../rules/ACCOUNT.md#apple), `RP-APL
 | Registro, email Apple sin OTP, continuación y cancelación | RP-APL-005..012 |
 | Sesión, minimización, contraseña y cambio de email | RP-APL-013..016 |
 | Métodos de acceso a una misma cuenta | RP-APL-017..019 |
-| Cuenta Apple a email y contraseña | RP-APL-015..016; RP-APL-026 |
+| Cuenta Apple a email y contraseña | RP-APL-015..016; RP-APL-026; RP-APL-032; RP-OTP-007 |
 | Cuenta con email y contraseña a Apple | RP-APL-027..031 |
-| Dos cuentas MDL ya creadas | DEC-01 |
+| Método de acceso ya asociado a otra cuenta | RP-MAIL-005; RP-APL-033 |
 | Revocación, notificaciones y disponibilidad | RP-APL-020..025 |
 | Baja e intentos de revocación | RP-BAJ-016; RP-AUT-005..007 |
 
@@ -66,11 +66,11 @@ La fuente única es [Acceso con Apple](../../../rules/ACCOUNT.md#apple), `RP-APL
 
 Los dos recorridos aprobados se definen únicamente en [Cuenta](../../../rules/ACCOUNT.md#metodos-acceso-apple). La ejecución debe cubrir ambos sentidos, su acceso desde los ajustes cuando corresponda, la verificación de cambios de email y la conservación de la misma cuenta y Vault.
 
-Antes de implementar esta ampliación deben reconciliarse los contratos, fases, escenarios y pruebas locales de API e iOS con esas reglas. No se presume cobertura por la existencia de `linkRequired` o `registrationRequired`. La resolución de dos cuentas distintas ya creadas permanece en [DEC-01](../../../rules/ACCOUNT.md#dec-01); no bloquea definir el recorrido normal de una única cuenta.
+Antes de implementar esta ampliación deben reconciliarse los contratos, fases, escenarios y pruebas locales de API e iOS con esas reglas. No se presume cobertura por la existencia de `linkRequired` o `registrationRequired`. Si el método ya pertenece a otra cuenta, la operación se rechaza sin modificar ninguna; no existe fusión automática ni siquiera cuando una parezca vacía.
 
 ## Escenarios de aceptación
 
-Los escenarios de alta y acceso referencian el catálogo. GWT-APPLE-05/06 cubren parte del recorrido de vinculación; no sustituyen la cobertura pendiente de ambos casos completos de RP-APL-015..019 y RP-APL-026..031. Los recorridos `linkRequired`/`registrationRequired` deben contrastarse con esas reglas antes de aceptar su implementación.
+Los escenarios de alta y acceso referencian el catálogo. GWT-APPLE-05/06 cubren parte del recorrido de vinculación; no sustituyen la cobertura pendiente de ambos casos completos de RP-APL-015..019 y RP-APL-026..033. Los recorridos `linkRequired`/`registrationRequired` deben contrastarse con esas reglas antes de aceptar su implementación.
 
 ### GWT-APPLE-01 — Botón requerido en beta
 
@@ -227,5 +227,4 @@ API debe estar desplegada y configurada antes de distribuir una build que muestr
 
 ## Decisión abierta
 
-1. **Dos cuentas MDL distintas ya creadas:** resolver [DEC-01 de Cuenta](../../../rules/ACCOUNT.md#dec-01) antes de implementar un tratamiento de esa colisión. Los recorridos normales de una misma cuenta ya están definidos y su implementación completa permanece pendiente.
-2. **Revisión Legal previa al rollout:** el inventario y la retención técnica de Apple ya están fijados; faltan aprobación de privacy disclosures, ficha App Store Privacy, proveedor/transferencias y texto público. No bloquea las fases técnicas sin activación, pero sí cualquier rollout público.
+1. **Revisión Legal previa al rollout:** el inventario y la retención técnica de Apple ya están fijados; faltan aprobación de privacy disclosures, ficha App Store Privacy, proveedor/transferencias y texto público. No bloquea las fases técnicas sin activación, pero sí cualquier rollout público.

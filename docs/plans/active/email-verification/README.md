@@ -49,7 +49,7 @@ Fuera de alcance:
 Requieren email verificado —y, en la práctica, ninguna operación funcional está disponible antes de verificar:
 
 - configurar el Vault;
-- cambiar contraseña desde una sesión autenticada, si esa función se incorpora; el reset anónimo actual queda excluido;
+- cambiar la contraseña desde una sesión autenticada conforme a `RP-PWD-001..004`; la recuperación sin sesión conserva su flujo propio;
 - cambiar email;
 - eliminar la cuenta.
 

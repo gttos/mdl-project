@@ -237,7 +237,7 @@ API recibe la identidad del Crush, edad y fecha de referencia, país, categoría
 
 **Flujo principal.** iOS obtiene la estructura autorizada, resuelve el snapshot cifrado de la misma entidad y fusiona ambos por ID. Una edición conserva el UUID. Archivar modifica visibilidad, no elimina la ficha ni su historia; restaurar la devuelve a activos.
 
-**Alternativas.** Si el Vault está bloqueado, no se muestra plaintext privado. Una edición de `met_at` mueve con ella el bundle inicial y debe quedar estrictamente antes de la primera experiencia o del primer acontecimiento relacional independiente del mismo Crush.
+**Alternativas.** Si el Vault está bloqueado, no se muestra plaintext privado. Una edición de `met_at` mueve con ella el bundle inicial y aplica los dos límites definidos en `RP-CRU-007..009`: sin acontecimientos independientes puede llegar hasta hoy; con ellos puede llegar como máximo al día anterior al primero, sin límite histórico hacia atrás.
 
 ### 4.8 CU-07 — Experiencias
 
