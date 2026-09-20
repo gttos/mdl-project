@@ -56,14 +56,14 @@
 - **RP-EXP-014.** La experiencia inicial permanece vinculada a `met_at` y se mueve conjuntamente cuando esa fecha se corrige válidamente.
 - **RP-EXP-015.** Una experiencia posterior no puede convertirse en experiencia inicial ni moverse a `met_at`, porque ese día conserva siempre la experiencia obligatoria del bundle inicial.
 - **RP-EXP-016.** Mover una experiencia no vinculada al día de un período o hito no crea una asociación automática. Todo vínculo relacional nace de una acción explícita y atómica conforme a RP-EXP-004.
-- **RP-EXP-017.** La beta no ofrece una acción independiente para desvincular una experiencia. El vínculo sólo desaparece al eliminar el elemento relacional elegible —conservando la experiencia— o al eliminar conjuntamente una experiencia vinculada y su elemento relacional conforme a RP-EXP-020.
+- **RP-EXP-017.** La beta no ofrece una acción independiente para desvincular una experiencia. Cuando una experiencia está vinculada al último hito eliminable, las acciones de ese bundle permiten elegir entre eliminar sólo el hito —la experiencia conserva su identidad y fecha como independiente— o eliminar conjuntamente el hito y la experiencia. Iniciar el borrado desde la experiencia vinculada siempre aplica la segunda opción. Ninguna opción deja un hito confirmado sin experiencia.
 - **RP-EXP-018.** Un rechazo identifica el campo y la causa de manera comprensible y nunca anuncia un éxito inexistente.
 
 <a id="eliminar"></a>
 ## Eliminar una experiencia
 
 - **RP-EXP-019.** Una experiencia no vinculada puede eliminarse sin límite de antigüedad. Una experiencia vinculada sólo puede eliminarse cuando el período o hito asociado sea también el último elemento relacional eliminable; en cualquier otro caso se rechaza sin mutación.
-- **RP-EXP-020.** Eliminar una experiencia vinculada elimina atómicamente también su período o hito asociado y restaura la historia conforme a las reglas latest-only de Relaciones. Si cualquiera de las dos partes no puede eliminarse, no se elimina ninguna.
+- **RP-EXP-020.** Eliminar una experiencia vinculada —desde su propia acción o mediante «Eliminar cambio y experiencia» en el último hito elegible— elimina atómicamente también su período o hito asociado y restaura la historia conforme a las reglas latest-only de Relaciones. Si cualquiera de las dos partes no puede eliminarse, no se elimina ninguna.
 - **RP-EXP-021.** La experiencia inicial no puede eliminarse de manera independiente ni ofrece esa acción. Puede editarse; sólo el borrado completo del Crush retira el bundle inicial y toda su historia.
 - **RP-EXP-022.** Una experiencia independiente confirmada puede eliminarse aunque exista otro cambio pendiente que no la afecte. Una experiencia vinculada no puede eliminarse mientras una operación pendiente pueda alterar cuál es el último elemento relacional; primero se resuelve esa operación y después se revalida la elegibilidad latest-only.
 - **RP-EXP-023.** Una experiencia pendiente que nunca se envió o fue rechazada sin cambios puede descartarse. Si pudo haber sido aceptada, debe comprobarse primero su resultado.
