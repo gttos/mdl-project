@@ -59,7 +59,7 @@ El requisito de edad está en [Cuenta](rules/ACCOUNT.md#requisitos); el aislamie
 | Período relacional | Tramo de historia con inicio, fase, etiqueta cuando corresponde y cierre opcional. |
 | Hito | Creación, avance, cambio de etiqueta o cierre realmente registrado dentro de un período. |
 | Último | Acontecimiento confirmado más reciente según la cronología de [Relaciones](rules/RELATIONSHIPS.md#periodos-hitos); no la posición visual de una tarjeta. |
-| Bloque inicial | Crush, período inicial obligatorio y experiencia inicial opcional, unidos en el día del encuentro. |
+| Bloque inicial | Crush, período inicial y experiencia inicial obligatorios, unidos en el día del encuentro. |
 | Vault | Espacio cifrado que conserva el contenido privado y permite recuperarlo sin exponerlo al servidor. |
 | Pendiente | Cambio guardado en el dispositivo que todavía no fue confirmado completamente. |
 | Día civil | Fecha local elegida, `yyyy-MM-dd`; no un instante UTC ni una ventana móvil de 24 horas. |
@@ -88,7 +88,6 @@ Definir una regla no demuestra que esté implementada ni permite distribuir una 
 
 | Documento | Decisiones |
 |---|---|
-| [Experiencias](rules/EXPERIENCES.md#decisiones-pendientes) | [DEC-07](rules/EXPERIENCES.md#dec-07) |
 | [Relaciones](rules/RELATIONSHIPS.md#decisiones-pendientes) | [DEC-06](rules/RELATIONSHIPS.md#dec-06), [DEC-13](rules/RELATIONSHIPS.md#dec-13) |
 | [Vault](rules/VAULT.md#decisiones-pendientes) | [DEC-10](rules/VAULT.md#dec-10) |
 | [Estadísticas e IA](rules/STATISTICS.md#decisiones-pendientes) | [DEC-08](rules/STATISTICS.md#dec-08) |

@@ -21,7 +21,7 @@ Para este inventario, «legible por la API» significa que el servidor interpret
 | API legible | Ducky | `ducky_id` | Es obligatorio y sólo admite los cuatro valores definidos por RP-CRU-005. |
 | API legible | Edad confirmada | `age` | Es obligatoria y entera entre 18 y 80 años inclusive. Siempre se interpreta junto con `age_as_of`. |
 | API legible administrada por el servidor | Fecha de confirmación de la edad | `age_as_of` | Es obligatoria, no puede ser futura y fija la fecha en que `age` fue confirmada. La API la genera cuando acepta una edad nueva; ningún cliente puede enviarla ni modificarla directamente. |
-| API legible | Fecha de encuentro | `met_at` | Es obligatoria y rige el inicio cronológico del Crush, su período inicial y su experiencia inicial cuando exista. |
+| API legible | Fecha de encuentro | `met_at` | Es obligatoria y rige el inicio cronológico del Crush, su período inicial y su experiencia inicial obligatoria. |
 | API legible derivada | Signo zodiacal | `zodiac_id` | Es opcional y sólo se deriva del día y mes del cumpleaños guardados en el Vault. No permite enviar el cumpleaños a la API. |
 | API legible | Altura | `height_id` | Es opcional y sólo admite una opción del catálogo de altura. |
 | API legible | Color de ojos | `eye_color_id` | Es opcional y sólo admite una opción del catálogo de ojos. |
@@ -43,20 +43,20 @@ Para este inventario, «legible por la API» significa que el servidor interpret
 | Vault opaco | Prefijo y número de WhatsApp | `whatsapp_prefix`, `whatsapp_number` dentro del payload Vault | Forman un único contacto opcional dentro del Vault: el prefijo se elige del catálogo de países y el número admite únicamente dígitos, con un máximo de 20. |
 | Vault opaco | Usuarios de redes | `instagram`, `facebook`, `snapchat`, `tiktok` dentro del payload Vault | Son cuatro textos opcionales independientes de hasta 255 caracteres cada uno. |
 | Vault opaco | Cumpleaños | `birthdate` dentro del payload Vault | Es opcional y se compone únicamente de día y mes. |
-| Sólo dispositivo | Fotos del Crush | Archivos locales asociados a `id` | No se transmiten a la API ni al Vault y se rigen por RP-FOT-001..008. |
+| Sólo dispositivo | Fotos del Crush | Archivos locales asociados a `id` | No se transmiten a la API ni al Vault y se rigen por RP-FOT-001..009. |
 | Otros dominios vinculados | Situación relacional, períodos, hitos, experiencias y satisfacción | Entidades propias | Se rigen por sus documentos correspondientes y no se duplican como campos del perfil del Crush. |
 
 - **RP-CRU-014.** País, Ducky, signo zodiacal, altura, color de ojos, color de pelo, tipo de cuerpo y color de piel se conservan como opciones de sus catálogos, mediante sus IDs. No son texto libre y no pertenecen al Vault por el solo hecho de describir a una persona.
-- **RP-CRU-015.** Los campos estructurales del Crush son exactamente los enumerados como «API legible» o «Administrado por el sistema» en RP-CRU-013. Su contenido privado está formado por nombre, género, profesión, WhatsApp, Instagram, Facebook, Snapchat, TikTok y cumpleaños, con la obligatoriedad indicada en el mismo inventario. La situación relacional, las experiencias, la cuenta, el Vault y las fotos conservan sus contratos propios.
+- **RP-CRU-015.** Los campos estructurales del Crush son exactamente los enumerados como «API legible» o «Administrado por el sistema» en RP-CRU-013. Su contenido privado está formado por nombre, género, profesión, WhatsApp, Instagram, Facebook, Snapchat, TikTok y cumpleaños, con la obligatoriedad indicada en el mismo inventario. El dispositivo cifra ese contenido antes de transferirlo, conserva localmente la entry cifrada y sincroniza con el Vault remoto únicamente ciphertext como copia cifrada recuperable. El contenido sólo se descifra en la memoria de un dispositivo autorizado que haya desbloqueado o recuperado el mismo Vault; la API funcional continúa interpretando únicamente la estructura enumerada. La situación relacional, las experiencias, la cuenta, el Vault y las fotos conservan sus contratos propios.
 
 <a id="alta"></a>
 ## Alta de un Crush
 
-- **BR-4.01.** Crear un Crush exige exactamente que la persona informe: nombre; género del catálogo; país del catálogo; Ducky; fecha de encuentro; edad confirmada; y situación relacional inicial. Nombre y género se guardan únicamente en el Vault; país, Ducky, fecha de encuentro y edad forman estructura funcional. Cuando la API acepta el alta, genera `age_as_of` con su fecha vigente y la conserva junto con la edad.
-- **RP-CRU-004.** El alta es una única acción compuesta que incluye el Crush, su período relacional inicial y, si se incluye, su experiencia inicial completa. Un formulario incompleto puede conservar temporalmente lo introducido para corregirlo, pero no crea un Crush ni un cambio pendiente. Cuando todos los datos son válidos, la aplicación puede conservar la acción completa como pendiente hasta sincronizarla; el servidor crea todas sus partes o ninguna.
+- **BR-4.01.** Crear un Crush exige exactamente que la persona informe: nombre; género del catálogo; país del catálogo; Ducky; fecha de encuentro; edad confirmada; situación relacional inicial; y una experiencia inicial completa con lugar, descripción y satisfacción. Nombre y género se guardan únicamente en el Vault; país, Ducky, fecha de encuentro, edad y satisfacción forman estructura funcional; lugar y descripción permanecen en el Vault. Cuando la API acepta el alta, genera `age_as_of` con su fecha vigente y la conserva junto con la edad.
+- **RP-CRU-004.** El alta es una única acción compuesta que incluye obligatoriamente el Crush, su período relacional inicial y su experiencia inicial completa, todos correlacionados en `met_at`. Un formulario incompleto puede conservar temporalmente lo introducido para corregirlo, pero no crea un Crush ni un cambio pendiente. Cuando todos los datos son válidos, la aplicación puede conservar la acción completa como pendiente hasta sincronizarla; el servidor crea todas sus partes o ninguna.
 - **RP-CRU-005.** La persona elige el Ducky del Crush entre `1 casualDuck`, `2 loveDuck`, `3 devilDuck` y `4 uglyDuck`. La aplicación no lo asigna ni lo cambia automáticamente a partir de la situación relacional, las estadísticas, la actividad o la IA.
 
-La [situación relacional inicial](RELATIONSHIPS.md#inicial) y la [experiencia inicial opcional](EXPERIENCES.md#inicial) se definen en sus documentos respectivos.
+La [situación relacional inicial](RELATIONSHIPS.md#inicial) y la [experiencia inicial obligatoria](EXPERIENCES.md#inicial) se definen en sus documentos respectivos.
 
 <a id="perfil"></a>
 ## Perfil del Crush
@@ -92,9 +92,9 @@ Los catálogos de rasgos físicos admiten exactamente estas opciones; el texto v
 
 ### Fecha de encuentro
 
-- **RP-CRU-007.** La fecha de encuentro siempre registra un hecho ya ocurrido: nunca puede ser futura. Puede moverse desde el perfil del Crush hacia una fecha anterior o posterior a la actualmente guardada y no tiene un límite histórico mínimo. Si el Crush tiene alguna experiencia o algún acontecimiento relacional independiente del bundle inicial, la nueva fecha debe ser estrictamente anterior al primero de esos acontecimientos.
-- **RP-CRU-008.** El calendario aplica como límite superior el menor entre hoy y el día anterior al acontecimiento independiente más antiguo del mismo Crush. Si no existe ningún acontecimiento independiente, la última fecha seleccionable es hoy. Para encontrar el primero tiene en cuenta experiencias y acontecimientos relacionales confirmados o pendientes. El período inicial, su hito inicial y la experiencia inicial no limitan la selección porque se desplazan junto con `met_at`. Los acontecimientos de otros Crushes tampoco la limitan.
-- **RP-CRU-009.** Corregir la fecha de encuentro cambia conjuntamente la fecha del período relacional inicial, de su hito inicial y, cuando exista, de la experiencia inicial. Siguen siendo los mismos elementos y conservan sus asociaciones. Las experiencias y los acontecimientos relacionales independientes conservan su fecha y sus asociaciones actuales. Una posible asociación con el bundle inicial se evalúa desde el flujo propio del acontecimiento independiente y conforme a sus reglas de edición.
+- **RP-CRU-007.** La fecha de encuentro siempre registra un hecho ya ocurrido: nunca puede ser futura. Puede moverse desde el perfil del Crush hacia una fecha anterior o posterior a la actualmente guardada y no tiene un límite histórico mínimo. Si el Crush tiene alguna experiencia posterior al bundle inicial —con o sin cambio relacional—, la nueva fecha debe ser estrictamente anterior a la primera.
+- **RP-CRU-008.** El calendario aplica como límite superior el menor entre hoy y el día anterior a la experiencia posterior más antigua del mismo Crush. Si no existe ninguna, la última fecha seleccionable es hoy. Para encontrarla tiene en cuenta experiencias confirmadas o pendientes. El período inicial, su hito inicial y la experiencia inicial no limitan la selección porque se desplazan juntos con `met_at`. Las experiencias de otros Crushes tampoco la limitan.
+- **RP-CRU-009.** Corregir la fecha de encuentro cambia conjuntamente la fecha del período relacional inicial, de su hito inicial y de la experiencia inicial. Siguen siendo los mismos elementos y conservan sus asociaciones. Todas las experiencias posteriores y sus eventuales hitos vinculados conservan su fecha y sus asociaciones actuales.
 
 **Ejemplo.** Si `met_at` es el 1 de septiembre y el primer acontecimiento independiente ocurre el 5 de septiembre, puede cambiarse al 4 de septiembre o a cualquier fecha anterior, incluso de años anteriores. No puede cambiarse al 5 de septiembre ni a una fecha posterior.
 
@@ -142,6 +142,7 @@ El signo derivado utiliza exactamente este catálogo: `1 aries`, `2 taurus`, `3 
 - **RP-FOT-006.** Recuperar el Vault no recupera las fotos del Crush. MDL no garantiza el borrado remoto de fotos en un dispositivo sin conexión.
 - **RP-FOT-007.** Cada Crush puede tener como máximo cinco fotos guardadas. Eliminar una foto libera inmediatamente ese lugar para añadir otra.
 - **RP-FOT-008.** Cada foto puede ocupar como máximo 10 MB. MDL rechaza una foto que supere ese tamaño y no altera las fotos ya guardadas.
+- **RP-FOT-009.** El Crush sólo admite fotografías. MDL no ofrece ni admite subir videos como contenido del Crush.
 
 Las restricciones al editar el perfil del Crush mientras hay cambios pendientes se definen en [Guardado y sincronización](SYNC.md#conflictos).
 
@@ -168,3 +169,4 @@ Las restricciones al editar el perfil del Crush mientras hay cambios pendientes 
 - **RP-DEL-003.** Antes de pedir la eliminación funcional al servidor, la aplicación conserva durablemente la intención de borrar. No retira todavía su copia local. Si la petición falla o la respuesta se pierde, mantiene la operación pendiente y el Crush local hasta poder reanudarla y confirmar el resultado.
 - **RP-DEL-004.** Reanudar o repetir una eliminación es idempotente: si el servidor ya borró el Crush durante un intento cuya respuesta se perdió, el reintento se considera satisfactorio y no vuelve a crear ni necesita recuperar sus asociaciones. Una respuesta de «no encontrado» sólo puede confirmar el borrado cuando existe un intento anterior registrado durablemente; en el primer intento se trata como error.
 - **RP-DEL-005.** Sólo después de confirmar el borrado funcional, la aplicación retira el contenido local del Vault, las fotos y el resto de copias vinculadas. Entonces el Crush y sus datos dejan de estar disponibles. La destrucción definitiva del contenido cifrado en infraestructura sigue los plazos de [Tareas automáticas y plazos](DATA_LIFECYCLE.md#tareas).
+- **RP-DEL-006.** La acción para eliminar el Crush completo se ofrece desde su fila en la lista de Crushes activos. No aparece dentro del bloque inicial, la ficha ni las acciones de su experiencia, período o hito. Un Crush archivado debe restaurarse antes de poder eliminarse.

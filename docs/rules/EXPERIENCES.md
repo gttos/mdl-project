@@ -19,16 +19,16 @@
 | Administrado por el sistema | Correlación de una acción compuesta | `correlation_id` | Une la experiencia con el bundle inicial o con un cambio relacional registrado en la misma acción. No es editable ni visible como contenido de la experiencia. |
 | Administrado por el sistema | Vinculación relacional | `relationship_id`, `period_change_id` | Identifica, cuando corresponde, el período y el hito asociados. La coincidencia de fechas por sí sola no sustituye estos vínculos. |
 | Administrado por el sistema | Fechas técnicas de creación, actualización y eliminación | `created_at`, `updated_at`, `deleted_at` | Sostienen orden, sincronización y ciclo de vida. No sustituyen `date`. |
-| Vault opaco | Lugar | `place` dentro del payload Vault | Es texto privado de esa experiencia y sólo se muestra con el Vault desbloqueado. |
-| Vault opaco | Descripción | `description` dentro del payload Vault | Es el único texto descriptivo privado de esa experiencia y sólo se muestra con el Vault desbloqueado. |
+| Vault opaco | Lugar | `place` dentro del payload Vault | Es texto libre obligatorio de hasta 255 caracteres, privado de esa experiencia y sólo se muestra con el Vault desbloqueado. |
+| Vault opaco | Descripción | `description` dentro del payload Vault | Es texto libre obligatorio de hasta 5.000 caracteres, constituye el único texto descriptivo privado de esa experiencia y sólo se muestra con el Vault desbloqueado. |
 
-- **RP-EXP-026.** La estructura funcional legible de una experiencia está formada por su identidad, propiedad, fecha, satisfacción y asociaciones. El contenido funcional de su payload Vault está formado por `place` y `description`. La API conserva el payload cifrado y no interpreta esos dos campos.
+- **RP-EXP-026.** La estructura funcional legible de una experiencia está formada por su identidad, propiedad, fecha, satisfacción y asociaciones. El contenido privado de su payload Vault está formado por `place` y `description`. El dispositivo cifra ese payload antes de transferirlo, conserva localmente la entry cifrada y sincroniza con el Vault remoto únicamente ciphertext como copia cifrada recuperable. `place` y `description` sólo se descifran en la memoria de un dispositivo autorizado que haya desbloqueado o recuperado el mismo Vault; la API funcional interpreta únicamente la estructura de la experiencia.
 
 <a id="inicial"></a>
-## Experiencia inicial opcional
+## Experiencia inicial obligatoria
 
-- **RP-INI-001.** La experiencia inicial es opcional. Lugar, descripción y satisfacción forman un bloque completo: si los tres están vacíos, no se crea ninguna experiencia; si se informa cualquiera de ellos, deben completarse los tres. Mientras el bloque esté incompleto, el alta no puede confirmarse y la aplicación señala lo que falta.
-- **RP-INI-002.** Lugar y descripción son información sensible y viven exclusivamente dentro del Vault. No forman parte del modelo funcional ni se envían en claro a la API. De esos tres campos de la experiencia inicial, la API funcional recibe únicamente el identificador de satisfacción (`satisfaction_id`), además de la fecha y las asociaciones estructurales necesarias.
+- **RP-INI-001.** Toda alta de un Crush exige una experiencia inicial completa que explique cómo se conocieron. Su fecha es `met_at`; lugar, descripción y satisfacción son obligatorios. Mientras cualquiera de esos datos falte o sea inválido, el alta no puede confirmarse y la aplicación señala todos los campos que deben corregirse.
+- **RP-INI-002.** Lugar y descripción son información sensible y viven exclusivamente dentro del Vault. La aplicación los cifra en el dispositivo antes de transferir el payload, conserva la entry cifrada local y sincroniza con el Vault remoto únicamente ciphertext como copia cifrada recuperable. Sólo un dispositivo autorizado que desbloquee o recupere el mismo Vault los descifra para la persona propietaria. De los tres campos propios de la experiencia inicial, la API funcional interpreta únicamente el identificador de satisfacción (`satisfaction_id`), además de la fecha y las asociaciones estructurales necesarias.
 - **RP-INI-003.** La experiencia inicial queda vinculada al Crush. Su fecha siempre coincide con `met_at` y no puede editarse de manera independiente. Si se corrige `met_at`, su fecha se actualiza conjuntamente.
 
 <a id="contenido"></a>
@@ -41,15 +41,12 @@
 
 - **RP-EXP-001.** Una experiencia pertenece a un Crush y puede existir como máximo una experiencia por Crush y día civil, incluidos los cambios pendientes conocidos.
 - **RP-EXP-002.** Ampliar o corregir lo ocurrido ese mismo día modifica la experiencia existente; no crea una segunda.
-- **RP-EXP-003.** `date` y `satisfaction_id` son obligatorios. `satisfaction_id` admite exactamente los valores 1 a 5. `place` y `description` son privados. La experiencia inicial sigue [Experiencia inicial](#inicial); la obligatoriedad exacta de `place` y `description` en una experiencia posterior está pendiente en [Decisiones pendientes](../PRODUCT.md#decisiones-pendientes).
-- **RP-EXP-004.** Una experiencia puede registrarse sola o junto con un cambio relacional elegido expresamente. Cuando se registran juntos, ambos corresponden al día de la experiencia y se confirman o rechazan como una sola acción.
+- **RP-EXP-003.** Toda experiencia conserva obligatoriamente `date`, `satisfaction_id`, `place` y `description`. `satisfaction_id` admite exactamente los enteros 1, 2, 3, 4 o 5. `place` y `description` son textos libres privados que viven dentro del payload Vault; `place` admite hasta 255 caracteres y `description`, hasta 5.000. No pueden omitirse, quedar vacíos ni superar esos límites al crear o editar una experiencia. La experiencia inicial cumple la misma obligatoriedad y usa `met_at` como fecha.
+- **RP-EXP-004.** Una experiencia puede registrarse sin cambio relacional. Toda creación de período o cambio relacional, en cambio, exige una experiencia elegida expresamente y se guarda junto con ella como una sola acción atómica en el día de la experiencia.
 - **RP-EXP-005.** Una experiencia puede quedar vinculada como máximo a un período relacional y a un único hito de ese período.
-- **RP-EXP-006.** Una experiencia posterior que no estuviera vinculada y cuya fecha pase a coincidir con `met_at` ocupa el lugar de la experiencia inicial si está libre, conservando su identidad.
-- **RP-EXP-007.** Una experiencia puede vincularse al inicio de un período relacional posterior cuando ambas fechas coinciden y ese inicio todavía no tiene experiencia. Coincidir en la fecha no vincula automáticamente una experiencia a un hito posterior.
+- **RP-EXP-006.** El día `met_at` está ocupado por la experiencia inicial obligatoria. Ninguna experiencia posterior puede crearse o moverse a ese día.
 - **RP-EXP-008.** Si el hito ya tiene una experiencia vinculada, se rechaza un segundo vínculo sin modificar ninguna de las experiencias.
-- **RP-EXP-009.** Crear un nuevo período relacional desde una experiencia requiere que no exista otro período vivo y que la fecha sea válida. No se confunde con cambiar la situación del período vigente.
-- **RP-EXP-010.** Una experiencia posterior al cierre de una relación se guarda sin reabrirla ni crear automáticamente otro período. Cuando corresponda, la aplicación puede ofrecer iniciar uno nuevo.
-- **RP-EXP-011.** La invitación a iniciar un nuevo período sólo aparece después de guardar correctamente la experiencia, una única vez y cuando esa acción sea posible.
+- **RP-EXP-010.** Una experiencia posterior al cierre de una relación se guarda sin reabrirla ni crear automáticamente otro período.
 
 <a id="editar"></a>
 ## Editar una experiencia
@@ -57,28 +54,19 @@
 - **RP-EXP-012.** Una experiencia confirmada puede editarse sin límite de antigüedad, respetando su Crush, el orden cronológico y la regla de una experiencia por día.
 - **RP-EXP-013.** La fecha de una experiencia vinculada a un hito relacional no puede editarse de manera independiente. Editar sus demás datos no mueve ni reescribe el hito.
 - **RP-EXP-014.** La experiencia inicial permanece vinculada a `met_at` y se mueve conjuntamente cuando esa fecha se corrige válidamente.
-- **RP-EXP-015.** Mover una experiencia no vinculada al día de `met_at`, cuando ese día está libre, la convierte en la experiencia inicial sin cambiar su identidad.
-- **RP-EXP-016.** Mover una experiencia al día de inicio de otro período elegible aplica la misma regla de vínculo. Si ese lugar ya está ocupado, no se modifica la experiencia.
-- **RP-EXP-017.** La beta no ofrece una acción independiente para desvincular una experiencia. Eliminarla conserva el hito relacional y permite crear después otra experiencia válida.
+- **RP-EXP-015.** Una experiencia posterior no puede convertirse en experiencia inicial ni moverse a `met_at`, porque ese día conserva siempre la experiencia obligatoria del bundle inicial.
+- **RP-EXP-016.** Mover una experiencia no vinculada al día de un período o hito no crea una asociación automática. Todo vínculo relacional nace de una acción explícita y atómica conforme a RP-EXP-004.
+- **RP-EXP-017.** La beta no ofrece una acción independiente para desvincular una experiencia. El vínculo sólo desaparece al eliminar el elemento relacional elegible —conservando la experiencia— o al eliminar conjuntamente una experiencia vinculada y su elemento relacional conforme a RP-EXP-020.
 - **RP-EXP-018.** Un rechazo identifica el campo y la causa de manera comprensible y nunca anuncia un éxito inexistente.
 
 <a id="eliminar"></a>
 ## Eliminar una experiencia
 
-- **RP-EXP-019.** Toda experiencia puede eliminarse, sin límite de antigüedad y aunque no sea la más reciente.
-- **RP-EXP-020.** Eliminar una experiencia vinculada retira la experiencia y su asociación, pero conserva el período, el hito y la historia relacional sin revertirlos.
-- **RP-EXP-021.** Eliminar la experiencia inicial libera ese lugar y conserva el Crush y su período relacional inicial.
-- **RP-EXP-022.** Una experiencia confirmada puede eliminarse aunque exista otro cambio pendiente en el Timeline del mismo Crush.
+- **RP-EXP-019.** Una experiencia no vinculada puede eliminarse sin límite de antigüedad. Una experiencia vinculada sólo puede eliminarse cuando el período o hito asociado sea también el último elemento relacional eliminable; en cualquier otro caso se rechaza sin mutación.
+- **RP-EXP-020.** Eliminar una experiencia vinculada elimina atómicamente también su período o hito asociado y restaura la historia conforme a las reglas latest-only de Relaciones. Si cualquiera de las dos partes no puede eliminarse, no se elimina ninguna.
+- **RP-EXP-021.** La experiencia inicial no puede eliminarse de manera independiente ni ofrece esa acción. Puede editarse; sólo el borrado completo del Crush retira el bundle inicial y toda su historia.
+- **RP-EXP-022.** Una experiencia independiente confirmada puede eliminarse aunque exista otro cambio pendiente que no la afecte. Una experiencia vinculada no puede eliminarse mientras una operación pendiente pueda alterar cuál es el último elemento relacional; primero se resuelve esa operación y después se revalida la elegibilidad latest-only.
 - **RP-EXP-023.** Una experiencia pendiente que nunca se envió o fue rechazada sin cambios puede descartarse. Si pudo haber sido aceptada, debe comprobarse primero su resultado.
 - **RP-EXP-024.** El contenido privado de una experiencia eliminada sigue las reglas de retirada y destrucción de [Vault](VAULT.md) y [Tareas automáticas y plazos](DATA_LIFECYCLE.md#tareas).
 
 Las opciones de cambio relacional se rigen por [Relaciones](RELATIONSHIPS.md#trayectos). Guardar una experiencia junto con un cambio no amplía los trayectos ni vuelve editable una relación histórica.
-
-<a id="decisiones-pendientes"></a>
-## Decisiones pendientes
-
-Estas decisiones siguen abiertas. La documentación técnica y el comportamiento implementado son referencias y no las resuelven por sí solos.
-
-| ID | Decisión pendiente | Lo ya fijado |
-|---|---|---|
-| <a id="dec-07"></a>DEC-07 | Obligatoriedad de `place` y `description` en una experiencia posterior y límites de longitud o formato para esos campos, nombre, profesión, WhatsApp y usuarios de redes. | La experiencia inicial es todo-o-nada; `date` y `satisfaction_id` son obligatorios; los campos y catálogos admitidos ya están cerrados en sus inventarios. |
