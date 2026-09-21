@@ -1,6 +1,6 @@
 # Reglas de producto — Crush y perfil del Crush
 
-**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica.
+**Estado de revisión: EN REVISIÓN.** Este archivo sólo se marca como finalizado cuando la persona responsable de Producto lo indique expresamente. Ese estado no certifica implementación ni aprobación jurídica.
 
 [Índice de reglas](../PRODUCT.md) · Alta, datos y edición del perfil del Crush, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación.
 
@@ -22,6 +22,8 @@ Para este inventario, «legible por la API» significa que el servidor interpret
 | API legible | Edad confirmada | `age` | Es obligatoria y entera entre 18 y 80 años inclusive. Siempre se interpreta junto con `age_as_of`. |
 | API legible administrada por el servidor | Fecha de confirmación de la edad | `age_as_of` | Es obligatoria, no puede ser futura y fija la fecha en que `age` fue confirmada. La API la genera cuando acepta una edad nueva; ningún cliente puede enviarla ni modificarla directamente. |
 | API legible | Fecha de encuentro | `met_at` | Es obligatoria y rige el inicio cronológico del Crush, su período inicial y su experiencia inicial obligatoria. |
+| API legible derivada | Resultado de match | `match_status_id` | Es obligatorio y admite `0 UNKNOWN`, `1 MATCH` o `2 NO_MATCH`. Se recalcula desde los hitos conservados conforme a [Resultado de match](RELATIONSHIPS.md#match). |
+| API legible derivada | Primer match | `first_match_situation_id`, `first_match_date` | Son nulos mientras no exista match y señalan la primera situación 4–8 y su fecha cuando lo hay. |
 | API legible derivada | Signo zodiacal | `zodiac_id` | Es opcional y sólo se deriva del día y mes del cumpleaños guardados en el Vault. No permite enviar el cumpleaños a la API. |
 | API legible | Altura | `height_id` | Es opcional y sólo admite una opción del catálogo de altura. |
 | API legible | Color de ojos | `eye_color_id` | Es opcional y sólo admite una opción del catálogo de ojos. |
@@ -44,7 +46,7 @@ Para este inventario, «legible por la API» significa que el servidor interpret
 | Vault opaco | Usuarios de redes | `instagram`, `facebook`, `snapchat`, `tiktok` dentro del payload Vault | Son cuatro textos opcionales independientes de hasta 255 caracteres cada uno. |
 | Vault opaco | Cumpleaños | `birthdate` dentro del payload Vault | Es opcional y se compone únicamente de día y mes. |
 | Sólo dispositivo | Fotos del Crush | Archivos locales asociados a `id` | No se transmiten a la API ni al Vault y se rigen por RP-FOT-001..009. |
-| Otros dominios vinculados | Situación relacional, períodos, hitos, experiencias y satisfacción | Entidades propias | Se rigen por sus documentos correspondientes y no se duplican como campos del perfil del Crush. |
+| Otros dominios vinculados | Situación relacional, períodos, hitos, experiencias y satisfacción | Entidades propias | Se rigen por sus documentos correspondientes. El Crush sólo conserva las proyecciones de match declaradas arriba para consulta directa; no duplica el historial. |
 
 - **RP-CRU-014.** País, Ducky, signo zodiacal, altura, color de ojos, color de pelo, tipo de cuerpo y color de piel se conservan como opciones de sus catálogos, mediante sus IDs. No son texto libre y no pertenecen al Vault por el solo hecho de describir a una persona.
 - **RP-CRU-015.** Los campos estructurales del Crush son exactamente los enumerados como «API legible» o «Administrado por el sistema» en RP-CRU-013. Su contenido privado está formado por nombre, género, profesión, WhatsApp, Instagram, Facebook, Snapchat, TikTok y cumpleaños, con la obligatoriedad indicada en el mismo inventario. El dispositivo cifra ese contenido antes de transferirlo, conserva localmente la entry cifrada y sincroniza con el Vault remoto únicamente ciphertext como copia cifrada recuperable. El contenido sólo se descifra en la memoria de un dispositivo autorizado que haya desbloqueado o recuperado el mismo Vault; la API funcional continúa interpretando únicamente la estructura enumerada. La situación relacional, las experiencias, la cuenta, el Vault y las fotos conservan sus contratos propios.
@@ -52,8 +54,8 @@ Para este inventario, «legible por la API» significa que el servidor interpret
 <a id="alta"></a>
 ## Alta de un Crush
 
-- **BR-4.01.** Crear un Crush exige exactamente que la persona informe: nombre; género del catálogo; país del catálogo; Ducky; fecha de encuentro; edad confirmada; situación relacional inicial; y una experiencia inicial completa con lugar, descripción y satisfacción. Nombre y género se guardan únicamente en el Vault; país, Ducky, fecha de encuentro, edad y satisfacción forman estructura funcional; lugar y descripción permanecen en el Vault. Cuando la API acepta el alta, genera `age_as_of` con su fecha vigente y la conserva junto con la edad.
-- **RP-CRU-004.** El alta es una única acción compuesta que incluye obligatoriamente el Crush, su período relacional inicial y su experiencia inicial completa, todos correlacionados en `met_at`. Un formulario incompleto puede conservar temporalmente lo introducido para corregirlo, pero no crea un Crush ni un cambio pendiente. Cuando todos los datos son válidos, la aplicación puede conservar la acción completa como pendiente hasta sincronizarla; el servidor crea todas sus partes o ninguna.
+- **BR-4.01.** Crear un Crush exige exactamente que la persona informe: nombre; género del catálogo; país del catálogo; Ducky; fecha de encuentro; edad confirmada; una situación relacional inicial 1–8; y una experiencia inicial completa con lugar, descripción y satisfacción. Nombre y género se guardan únicamente en el Vault; país, Ducky, fecha de encuentro, edad, situación y satisfacción forman estructura funcional; lugar y descripción permanecen en el Vault. Cuando la API acepta el alta, genera `age_as_of` con su fecha vigente y la conserva junto con la edad.
+- **RP-CRU-004.** El alta es una única acción compuesta que incluye obligatoriamente el Crush, su período relacional inicial, su hito inicial y su experiencia inicial completa, todos correlacionados en `met_at`. Un formulario incompleto puede conservar temporalmente lo introducido para corregirlo, pero no crea un Crush ni un cambio pendiente. Cuando todos los datos son válidos, la aplicación puede conservar la acción completa como pendiente hasta sincronizarla; el servidor crea todas sus partes o ninguna.
 - **RP-CRU-005.** La persona elige el Ducky del Crush entre `1 casualDuck`, `2 loveDuck`, `3 devilDuck` y `4 uglyDuck`. La aplicación no lo asigna ni lo cambia automáticamente a partir de la situación relacional, las estadísticas, la actividad o la IA.
 
 La [situación relacional inicial](RELATIONSHIPS.md#inicial) y la [experiencia inicial obligatoria](EXPERIENCES.md#inicial) se definen en sus documentos respectivos.

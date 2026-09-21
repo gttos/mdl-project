@@ -14,9 +14,9 @@ Legal mantiene su autoridad sobre privacidad, retención, derechos y cumplimient
 | Documento | Contenido | Estado |
 |---|---|---|
 | <a id="3-cuenta-autenticación-y-sesión"></a><a id="32-recuperación-de-la-contraseña-de-acceso"></a><a id="36-sign-in-with-apple"></a>[Cuenta de usuario](rules/ACCOUNT.md) | Alta y acceso, verificación, Apple, perfil de la cuenta de usuario, ajustes y recuperación de acceso. | FINALIZADO |
-| <a id="4-alta-y-perfil-de-un-crush"></a><a id="41-datos-obligatorios"></a><a id="43-edición-del-perfil"></a><a id="44-archivar-y-eliminar"></a>[Crush y perfil del Crush](rules/CRUSH.md) | Alta, datos y edición del perfil del Crush, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación. | FINALIZADO |
+| <a id="4-alta-y-perfil-de-un-crush"></a><a id="41-datos-obligatorios"></a><a id="43-edición-del-perfil"></a><a id="44-archivar-y-eliminar"></a>[Crush y perfil del Crush](rules/CRUSH.md) | Alta, datos y edición del perfil del Crush, proyecciones de match, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación. | EN REVISIÓN |
 | <a id="6-experiencias"></a><a id="62-edición"></a><a id="63-borrado"></a>[Experiencias](rules/EXPERIENCES.md) | Experiencia inicial y posteriores: datos, fechas, creación, edición, eliminación y vinculación con relaciones. | EN REVISIÓN |
-| <a id="7-relaciones"></a><a id="71-cronología"></a><a id="72-match-status"></a><a id="73-situaciones-y-trayectos-permitidos"></a><a id="74-cierre"></a><a id="75-registrar-corregir-y-eliminar"></a>[Relaciones](rules/RELATIONSHIPS.md) | Situación inicial, períodos, hitos, trayectos permitidos, cierre y corrección o eliminación del último elemento elegible. | EN REVISIÓN |
+| <a id="7-relaciones"></a><a id="71-cronología"></a><a id="72-match-status"></a><a id="73-situaciones-y-trayectos-permitidos"></a><a id="74-cierre"></a><a id="75-registrar-corregir-y-eliminar"></a>[Relaciones](rules/RELATIONSHIPS.md) | Situaciones, períodos, hitos, match, trayectos, cierre y acciones latest-only. | EN REVISIÓN |
 | <a id="81-contenido-e-identidad"></a><a id="83-acciones"></a><a id="84-actividad-reciente-de-home"></a>[Timeline y Home](rules/TIMELINE.md) | Presentación de la historia, orden, agrupación, acciones disponibles y actividad reciente de Home. | EN REVISIÓN |
 | <a id="10-vault-privacidad-y-fotos"></a><a id="103-borrado-dirigido"></a>[Vault](rules/VAULT.md) | Contenido privado, creación, bloqueo, recuperación, sustitución de dispositivo y retirada de contenido. | EN REVISIÓN |
 | <a id="9-escrituras-durables-y-sincronización-visible"></a>[Guardado y sincronización](rules/SYNC.md) | Qué significa guardar, cambios pendientes, conflictos, reintentos, corrección y descarte. | EN REVISIÓN |
@@ -55,11 +55,13 @@ El requisito de edad está en [Cuenta](rules/ACCOUNT.md#requisitos); el aislamie
 |---|---|
 | Cuenta | Persona usuaria autenticada, propietaria del diario. |
 | Crush | Ficha privada de una persona descrita por la cuenta. |
-| Experiencia | Acontecimiento con un crush en un día civil. |
-| Período relacional | Tramo de historia con inicio, fase, etiqueta cuando corresponde y cierre opcional. |
-| Hito | Creación, avance, cambio de etiqueta o cierre realmente registrado dentro de un período. |
+| Experiencia | Registro de lo ocurrido con un Crush en un día civil. Pertenece siempre a un período relacional y puede existir dentro de él sin crear un hito nuevo. |
+| Experiencia independiente | Experiencia que pertenece a un período relacional pero no está vinculada a ningún hito porque no registró una situación nueva. «Independiente» nunca significa que exista fuera de un período; si ese período se cierra después, la experiencia continúa dentro de él como parte de su historia. |
+| Situación relacional | Estado exacto elegido para la historia. Se guarda mediante el ID de `RelationshipSituation`; sus claves internas permanecen en inglés y la app muestra copy `es-ES`. |
+| Período relacional | Tramo de la historia relacional que comienza con un hito inicial, mantiene una situación vigente y termina cuando se registra un hito de cierre. |
+| Hito relacional | Registro estructural, perteneciente a un período, que deja constancia de su creación, cambio de situación o cierre. Cada hito se vincula a la experiencia que explica lo ocurrido, pero no es una experiencia. |
 | Último | Acontecimiento confirmado más reciente según la cronología de [Relaciones](rules/RELATIONSHIPS.md#periodos-hitos); no la posición visual de una tarjeta. |
-| Bloque inicial | Crush, período inicial y experiencia inicial obligatorios, unidos en el día del encuentro. |
+| Bloque inicial | Crush, período inicial, hito inicial y experiencia inicial obligatorios, unidos en el día del encuentro. |
 | Vault | Espacio cifrado que conserva el contenido privado y permite recuperarlo sin exponerlo al servidor. |
 | Pendiente | Cambio guardado en el dispositivo que todavía no fue confirmado completamente. |
 | Día civil | Fecha local elegida, `yyyy-MM-dd`; no un instante UTC ni una ventana móvil de 24 horas. |
@@ -88,7 +90,7 @@ Definir una regla no demuestra que esté implementada ni permite distribuir una 
 
 | Documento | Decisiones |
 |---|---|
-| [Relaciones](rules/RELATIONSHIPS.md#decisiones-pendientes) | [DEC-06](rules/RELATIONSHIPS.md#dec-06), [DEC-13](rules/RELATIONSHIPS.md#dec-13) |
+| [Relaciones](rules/RELATIONSHIPS.md#decisiones-pendientes) | [DEC-13](rules/RELATIONSHIPS.md#dec-13) |
 | [Vault](rules/VAULT.md#decisiones-pendientes) | [DEC-10](rules/VAULT.md#dec-10) |
 | [Estadísticas e IA](rules/STATISTICS.md#decisiones-pendientes) | [DEC-08](rules/STATISTICS.md#dec-08) |
 | [Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md#decisiones-pendientes) | [DEC-02](rules/DATA_LIFECYCLE.md#dec-02), [DEC-03](rules/DATA_LIFECYCLE.md#dec-03), [DEC-09](rules/DATA_LIFECYCLE.md#dec-09) |
