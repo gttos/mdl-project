@@ -115,6 +115,7 @@ Para este inventario, «legible por la API» significa que el servidor puede int
 
 - **RP-APL-020.** Si se revoca la autorización de Apple o deja de ser válida, se impide el acceso con Apple y se cierran las sesiones MDL afectadas. La cuenta y sus datos se conservan.
 - **RP-APL-023.** Si el acceso con Apple no está disponible, la aplicación informa del problema y permite reintentar cuando se restablezca. No comunica que se ha iniciado sesión si el acceso ha fallado.
+- **RP-APL-034.** «Continuar con Apple» se ofrece únicamente en iOS durante la beta. Android ofrece email y contraseña; una cuenta creada con Apple puede establecer su primera contraseña mediante el email vigente y verificado conforme a RP-APL-015 y acceder después desde Android a la misma cuenta y al mismo Vault.
 
 <a id="perfil-cuenta"></a>
 ## Perfil de la cuenta de usuario y ajustes

@@ -19,7 +19,7 @@ No es un monorepo: cada proyecto de código tiene su propio repositorio y ciclo 
 | Dato | Fuente de verdad | Observación |
 |---|---|---|
 | Cuenta, sesión y verificación | API | Cada cliente nativo conserva sólo las credenciales/tokens necesarios de forma segura. |
-| IDs funcionales, fechas, estados, relaciones y métricas estructurales | API | La API aplica autorización e invariantes de dominio. |
+| IDs funcionales, fechas, situaciones, períodos, hitos y métricas estructurales | API | La API aplica autorización e invariantes de dominio. |
 | Texto íntimo y snapshots durables | Vault cifrado | El cliente cifra antes de transferir; API/S3 ven ciphertext y metadatos mínimos. |
 | VMK y material de descifrado | Dispositivo/encapsulación E2EE | Nunca se envía una VMK en claro a la API. |
 | Proyección de cambios pendientes | Memoria del cliente, reconstruida desde Vault local | No es una segunda base persistente. |
@@ -33,7 +33,7 @@ No es un monorepo: cada proyecto de código tiene su propio repositorio y ciclo 
 |---|---|---|
 | `User` | Cuenta autenticada | Cuenta fuera del Vault E2EE. El contrato objetivo de [Cuenta](rules/ACCOUNT.md) conserva el email cifrado por el servidor, la fecha completa de nacimiento declarada y los IDs opcionales de género y país; implementación pendiente en [Información del usuario](plans/active/user-information/README.md). |
 | `FederatedIdentity` | Método de autenticación externo vinculado explícitamente a un `User` | Apple se identifica por `sub` verificado, no por email; los tokens de revocación permanecen cifrados y sujetos a la retención de `legal/04_MDL_Ciclo_Vida_Retencion_Derechos.md`. |
-| `Crush`, `Experience`, `Relationship` | Datos estructurales del diario | contenido íntimo asociado vive en `VaultBlob`, no en columnas propias — ver §2. |
+| `Crush`, `Experience`, `RelationshipPeriod`, `RelationshipMilestone` | Datos estructurales del diario | La situación se guarda por ID entero y se define mediante Value Objects cerrados; el contenido íntimo asociado vive en `VaultBlob`, no en columnas propias — ver §2. |
 | `Vault` | Contenedor E2EE de una cuenta | estado y versión de cripto. |
 | `VaultBlob` | Revisión cifrada de una entidad privada | Varias revisiones temporales pueden coexistir durante la sustitución segura; comparten el binding opaco de esa entidad. |
 | `VaultEntityBinding` | Vínculo opaco entre una entidad funcional y sus blobs | La API conoce tipo, ID funcional y token, pero el token se deriva con la VMK sólo en el cliente y no revela contenido. |
@@ -48,7 +48,7 @@ No existe entidad `File`: se eliminó de la base en julio de 2026 por no tener n
 
 ## 3. Identidad y aislamiento
 
-- Los IDs de crush, experiencia, relación y operación se generan de forma estable y se reutilizan en reintentos.
+- Los IDs de Crush, experiencia, período, hito y operación se generan de forma estable y se reutilizan en reintentos.
 - La API trata las creaciones repetidas con el mismo ID como idempotentes o como una colisión explícita, nunca como una segunda entidad silenciosa.
 - Todo acceso se limita al propietario autenticado; un ID de otra cuenta debe producir rechazo sin revelar datos.
 - El almacenamiento local, el almacén seguro de claves, las preferencias y las proyecciones se namespacen por cuenta/Vault.
@@ -105,8 +105,8 @@ El conflicto se evalúa dentro del mismo crush según `RP-DUR-006..009`. Los sna
 - Una instalación sin encapsulación local consulta el Vault remoto. Si existe, entra en recuperación y conserva ese estado entre background y relanzamientos.
 - Cada entidad funcional privada tiene un envelope cifrado completo identificado por `(entryType, entityId, revision)`. Una revisión nueva se verifica antes de retirar la anterior; esa coexistencia es transitoria y no constituye historial de usuario.
 - El cliente deriva `lookupToken = HMAC-SHA-256(VMK, "mdl-vault-lookup:v1:<entryType>:<entityId>")`, codificado Base64URL sin padding. El mismo token acompaña todas las revisiones de una entidad y nunca se registra en logs.
-- La API crea un `VaultEntityBinding` inmutable dentro de la misma transacción que materializa crush, experiencia o relación. Registrar un blob de texto exige un binding activo coincidente y falla cerrado ante ausencia, conflicto o cruce de propietario.
-- Borrar una experiencia o relación elegible resuelve el binding dentro de la transacción funcional y aplica soft delete a todos sus blobs activos. El retry es idempotente; el cliente no lista, descarga, verifica ni descifra el inventario para descubrir qué borrar.
+- La API crea un `VaultEntityBinding` inmutable dentro de la misma transacción que materializa un Crush o una experiencia. Registrar un blob de texto exige un binding activo coincidente y falla cerrado ante ausencia, conflicto o cruce de propietario. Los períodos e hitos relacionales no crean bindings ni blobs propios; su explicación privada pertenece al binding de la experiencia vinculada.
+- Borrar una experiencia, hito o período elegible resuelve los bindings afectados dentro de la transacción funcional y aplica soft delete a todos sus blobs activos. El retry es idempotente; el cliente no lista, descarga, verifica ni descifra el inventario para descubrir qué borrar.
 - El inventario global permanece disponible para sync, recovery y migración controlada. Recovery pagina y valida todo el conjunto, selecciona una revisión inequívoca por entidad, publica atómicamente y nunca ejecuta borrados remotos.
 - El baseline validado es cuenta nueva/Vault nuevo. La migración del usuario legacy, el corte de campos privados de API, el borrado completo de crush, las fotos, el reset integral del Vault y la baja de cuenta permanecen dentro de la transición activa documentada en [`plans/active/vault-e2ee/README.md`](plans/active/vault-e2ee/README.md); por eso la iniciativa no está cerrada.
 - Android debe demostrar este mismo contrato e interoperabilidad antes de admitir datos reales; su estado vive en [`plans/active/android-parity/README.md`](plans/active/android-parity/README.md).
@@ -131,14 +131,14 @@ La columna Estado refleja la evidencia vigente de API/iOS. Android permanece pen
 
 | Amenaza | Mitigación | Estado |
 |---|---|---|
-| Exposición de contenido íntimo (nombre/contacto/redes/cumpleaños de crush, texto de experiencia/relación) | Vault E2EE: cifrado en el dispositivo, el servidor nunca ve el plaintext | Implementado |
+| Exposición de contenido íntimo (nombre/contacto/redes/cumpleaños del Crush y lugar/descripción de experiencias) | Vault E2EE: cifrado en el dispositivo, el servidor nunca ve el plaintext | Implementado |
 | Exposición del email de cuenta | Cifrado de campo en servidor, búsqueda protegida, TLS, acceso restringido y exclusión de logs | Cifrado de campo y búsqueda pendientes en `user-information`; controles de infraestructura pendientes de evidencia operativa |
 | Ampliación accidental del perfil de cuenta | Inventario cerrado de Cuenta; fecha de nacimiento declarada asociada a la fecha del alta | Alineación de persistencia y contratos pendiente en `user-information`; los campos autorizados requieren controles de acceso y observabilidad |
 | Acceso no autorizado | Bearer token + autorización por propietario en cada ruta | Implementado |
 | Enumeración de cuentas en recuperación de contraseña | Respuesta pública genérica al solicitar, verificar o usar un OTP; detalle sólo en observabilidad saneada | BR-3.16 implementada y cubierta por pruebas HTTP; el bloqueo conserva su efecto interno | Implementado |
 | Fuerza bruta | Rate limiting por ruta y usuario/IP | Limiters autenticados y de blobs restaurados desde configuración; la validación de volumen real de sync de Vault queda pendiente | Implementado con validación operativa pendiente |
 | Pérdida de recuperación del Vault | Contraseña y frase de 24 palabras encapsulan la misma VMK; QR queda fuera de beta | Implementado y validado físicamente sobre un Vault nuevo recuperado en otro dispositivo. |
-| Blob huérfano al borrar experiencia o relación | Binding opaco y soft delete de todas las revisiones dentro de la transacción funcional | Implementado y validado físicamente. |
+| Blob huérfano al borrar experiencia, hito o período | Binding opaco y soft delete de todas las revisiones dentro de la transacción funcional | El contrato objetivo está definido; debe revalidarse con el modelo relacional final. |
 | Datos huérfanos tras borrar crush o cuenta | Deben coordinar blobs, entradas locales, encapsulaciones, dispositivos y fotos locales | Pendiente; fuera del cierre de borrado individual. |
 
 El detalle técnico de mitigación (headers, límites exactos, EXIF, backups del sistema operativo) vive en el `ARCHITECTURE.md` de cada repo, no acá.

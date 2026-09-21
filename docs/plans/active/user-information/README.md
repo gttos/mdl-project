@@ -1,6 +1,6 @@
 # Información de la cuenta de usuario
 
-**Estado:** definición de producto actualizada; implementación pendiente. El registro comprueba la mayoría de edad y conserva la fecha completa declarada junto con la fecha de alta, conforme a `RP-CUE-001`. Nombre, teléfono y edad exacta quedan fuera de la cuenta.
+**Estado:** definición de producto actualizada; API-UI-00 y API-UI-01 aceptadas con validaciones operativas pendientes. El registro comprueba la mayoría de edad y conserva la fecha completa declarada junto con la fecha de alta, conforme a `RP-CUE-001`. Nombre, teléfono y edad exacta quedan fuera de la cuenta.
 
 ## Objetivo y alcance
 
@@ -34,8 +34,8 @@ Las reglas pertenecen a ACCOUNT; este plan organiza su implementación. No cambi
 
 | Fase | Resultado | Estado |
 |---|---|---|
-| UI-00 — contrato y preparación | Cerrar mapa de consumidores, custodia/rotación de claves, tratamiento de datos existentes y orden de corte. | Pendiente; primera fase ejecutable de preparación, sin migrar datos |
-| API-UI-01 — email cifrado y búsquedas | Cifrado, consulta exacta, unicidad y adaptación de todos los flujos de identidad/comunicación, con pruebas. | Pendiente |
+| UI-00 — contrato y preparación | Cerrar mapa de consumidores, custodia/rotación de claves, tratamiento de datos existentes y orden de corte. | Aceptada para API: diseño de keyring, transición, rotación y corte documentado; sin migrar datos reales |
+| API-UI-01 — email cifrado y búsquedas | Cifrado, consulta exacta, unicidad y adaptación de todos los flujos de identidad/comunicación, con pruebas. | Implementación API aceptada con validaciones pendientes: cobertura local de identidad, rotación, backfill y concurrencia reportada; faltan claves operativas, migración real y validaciones externas autorizadas |
 | API-UI-02 — perfil mínimo | Contrato de fecha de nacimiento declarada, retirada de edad/nombre/teléfono y migración preparada y ensayada con datos sintéticos. | Pendiente; requiere contrato API |
 | IOS-UI-01 — cliente iOS | Registro, Apple, perfil, payloads y almacenamiento local adaptados al contrato final. | Pendiente; requiere contrato API |
 | AND-UI-01 — cliente Android | Registro y perfil con el mismo contrato; no activa Apple en Android. | Pendiente; requiere contrato API |
@@ -55,7 +55,7 @@ API prepara persistencia y contrato; iOS y Android adaptan sus consumidores. Pro
 
 ## Privacidad y operación
 
-El inventario de [Legal](../../../legal/02_MDL_Inventario_Maestro_Datos.md) describe todavía fecha completa y teléfono; es evidencia del modelo anterior, no aprobación del nuevo tratamiento. La revisión jurídica de minimización, comprobación de edad, información pública y backups queda pendiente. No se modifica Legal en esta fase.
+El inventario de [Legal](../../../legal/02_MDL_Inventario_Maestro_Datos.md) ya refleja el perfil mínimo, el email cifrado recuperable y sus copias operativas protegidas. Esa alineación factual no aprueba el tratamiento: la revisión jurídica de minimización, comprobación de edad, información pública, custodia de claves y backups continúa pendiente.
 
 Antes del corte debe quedar definido cómo retirar nombre, teléfono y día/mes de las copias operativas, sin prometer su desaparición instantánea de backups o proveedores. La política de [conservación y restauración](../../../legal/04_MDL_Ciclo_Vida_Retencion_Derechos.md) se respeta y se valida por separado; no se inventan plazos. Las claves y el índice de búsqueda siguen siendo material sensible y no convierten el email en anónimo.
 

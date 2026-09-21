@@ -1,6 +1,6 @@
 # Reglas de producto — Privacidad, seguridad y derechos
 
-**Estado de revisión: EN REVISIÓN.** Este archivo sólo se marca como finalizado cuando la persona responsable de Producto lo indique expresamente. Ese estado no certifica implementación ni aprobación jurídica.
+**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica; las decisiones expresamente pendientes continúan abiertas y no autorizan a inventar comportamiento.
 
 [Índice de reglas](../PRODUCT.md) · Aislamiento entre cuentas, protección de información, diagnóstico, soporte y ejercicio de derechos.
 
@@ -21,7 +21,7 @@
 - **RP-SEG-005.** Los flujos de autenticación, OTP, Apple, URLs temporales y escrituras del Vault aplican límites de uso por su propio alcance y comunican cuándo puede volver a intentarse.
 - **RP-SEG-006.** Logs, errores y analítica excluyen contraseñas, OTP, tokens, credenciales Apple, emails legibles, contenido del Vault, snapshots privados, URLs firmadas completas, tokens de búsqueda del Vault y payloads completos de solicitudes o respuestas.
 - **RP-SEG-007.** El diagnóstico se construye mediante una lista positiva de contexto técnico: identificador de traza o correlación; plantilla de ruta y método; código de estado o error saneado; fecha, duración y conteo; versión de aplicación y sistema; e identificadores técnicos mínimos cuando sean necesarios para investigar. IP y `user_agent` sólo forman parte de eventos de autenticación, abuso o seguridad. Los plazos de estos registros se resuelven en DEC-09.
-- **RP-SEG-008.** Todo objeto privado y toda capacidad temporal quedan vinculados a su cuenta propietaria. Los máximos por objeto y por cuenta se fijarán en [DEC-10](VAULT.md#dec-10).
+- **RP-SEG-008.** Todo objeto privado y toda capacidad temporal quedan vinculados a su cuenta propietaria y respetan los [límites del Vault](VAULT.md#inventario-servidor): 65.536 bytes por objeto y 25 MiB lógicos por cuenta. La capacidad temporal reserva cuota sin duplicarla en los reintentos.
 - **RP-SEG-009.** La IP y el esquema utilizados para seguridad sólo aceptan cabeceras de reenvío cuando proceden de un proxy expresamente confiable.
 - **RP-SEG-010.** Los secretos operativos se entregan por el mecanismo autorizado del entorno y permanecen fuera del código, imágenes, artefactos, logs y resultados de pruebas. El acceso de personal utiliza el mínimo permiso necesario y queda trazado.
 
@@ -45,4 +45,4 @@ Estas decisiones siguen abiertas. La documentación técnica y el comportamiento
 
 | ID | Decisión pendiente | Lo ya fijado |
 |---|---|---|
-| <a id="dec-12"></a>DEC-12 | Reconciliar con Legal la minimización estructural, los derechos de terceros, la portabilidad y las comunicaciones de privacidad. | Nombre y género quedan exclusivamente en Vault; cumpleaños tampoco llega a la API. El resto de la estructura funcional continúa sujeto a revisión Legal. |
+| <a id="dec-12"></a>DEC-12 | Obtener criterio jurídico sobre minimización estructural, derechos de terceros, portabilidad y comunicaciones de privacidad. | El expediente Legal ya refleja la ubicación de los datos y formula estas preguntas; falta la decisión de la asesoría. |

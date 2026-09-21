@@ -52,6 +52,7 @@ Fuera de alcance:
 | Borrado de crush/fotos (`API-17` + `iOS-09.9`) | Implementado; validación coordinada pendiente | API resuelve el grafo y blobs bajo transacción; iOS limpia entries, notas y `LocalMedia/{crushId}` sólo tras confirmación durable. Faltan despliegue/recorrido físico coordinado y una prueba de concurrencia representativa donde corresponda. |
 | Baja/reset integral (`API-11` + `iOS-12`) | Implementado; validación física pendiente | API confirma la baja y expone la confirmación durable ante respuesta perdida; iOS elimina Vault/Keychain/fotos locales sólo después de confirmación. Falta repetir el recorrido físico completo, incluida una cuenta con Vault activo y el relanzamiento tras una respuesta ambigua. |
 | Exclusión de fotos locales de backups (`iOS-13`) | Implementada; validación manual pendiente | `LocalMedia/`, sus subcarpetas por Crush y cada foto se marcan para excluirse del backup del sistema. Antes de lanzamiento hay que comprobar un backup real de dispositivo. |
+| Límites y cuota remota (`RP-VLT-027..031`) | Contrato definido; implementación pendiente | API e iOS deben aplicar 65.536 bytes por objeto, 25 MiB lógicos por cuenta, aviso al 80 %, reserva idempotente, observabilidad sin plaintext y caducidad a las 24 horas. La API debe liberar la cuota al vencer y limpiar objetos y metadata incompletos; iOS conserva la intención durable y solicita una capacidad nueva al reintentar. |
 
 ## Reglas compartidas y estado
 
@@ -111,7 +112,7 @@ La validación se completó con contraseña y con frase de 24 palabras, comproba
 
 **cuando** se despliega el corte contractual,
 
-**entonces** API deja de aceptar y devolver nombre/contacto/redes/cumpleaños, lugar/descripción y nota de cierre en rutas funcionales, e iOS sigue mostrando el historial únicamente desde Vault.
+**entonces** API deja de aceptar y devolver nombre/contacto/redes/cumpleaños y lugar/descripción en rutas funcionales, e iOS sigue mostrando ese contenido únicamente desde Vault.
 
 Las columnas permanecen todavía como red de seguridad; no se vacían en esta fase.
 

@@ -1,9 +1,9 @@
 # Anexo. Procedimiento de respuesta a incidentes de privacidad
 
 > **Estado:** base operativa para completar con nombres, contactos, proveedores y criterio jurídico.  
-> **Fecha de corte:** 14 de septiembre de 2026.
+> **Fecha de corte:** 21 de septiembre de 2026.
 > **Alcance:** cuenta y verificación, identidad Apple, datos funcionales, Vault, dispositivos, fotografías locales, proveedores, logs, datos conservados tras la baja y backups.
-> **Modelo de lanzamiento:** el contenido privado del diario existe sólo en Vault E2EE; la clave de aplicación del backend cifra el teléfono y otros campos expresamente inventariados, no el email ni una segunda copia del contenido Vault.
+> **Modelo de lanzamiento:** el contenido privado del diario existe sólo en Vault E2EE. El email de cuenta se conserva cifrado de forma recuperable por el backend para operaciones autorizadas y se acompaña de un índice exacto no reversible; no forma parte del Vault. El perfil de cuenta no contiene nombre ni teléfono.
 
 ## 1. Objetivos
 
@@ -18,8 +18,8 @@
 
 - acceso no autorizado a cuenta, API, base de datos, bucket o consola;
 - vulnerabilidad que permita leer o modificar datos de otra cuenta;
-- aparición de nombre, contacto, lugar, descripción o nota de cierre en logs, requests o reportes;
-- exposición de fases, etiquetas, cierres, historiales, fechas, ratings, asociaciones o secuencias relacionales de otra cuenta;
+- aparición de nombre o contacto del Crush, lugar o descripción de experiencia en logs, requests o reportes;
+- exposición de situaciones, match, motivos de cierre, períodos, hitos, fechas, satisfacción, ratings, asociaciones o secuencias relacionales de otra cuenta;
 - exposición o uso indebido de OTP, continuación Apple, `sub`, Private Relay, credenciales o notificaciones federadas;
 - exposición de VMK, secretos de recuperación, tokens, URLs firmadas o claves administrativas;
 - pérdida, corrupción o borrado indebido de blobs;
@@ -34,7 +34,7 @@
 
 | Clase | Ejemplo | Pregunta inmediata |
 |---|---|---|
-| A. Cuenta/datos funcionales | Acceso a identidad, verificación, fases, fechas o valoraciones | ¿Qué cuentas, campos y acciones quedaron expuestos? |
+| A. Cuenta/datos funcionales | Acceso a identidad, verificación, situaciones, match, fechas o valoraciones | ¿Qué cuentas, campos y acciones quedaron expuestos? |
 | B. Plaintext privado | Texto descifrado en log, memoria persistida o request | ¿Quién pudo leerlo y durante cuánto tiempo? |
 | C. Ciphertext | Objetos cifrados copiados o publicados | ¿Se expusieron también metadata, encapsulaciones o secretos? |
 | D. Claves/recuperación | VMK, secreto, clave privada o credencial administrativa | ¿Puede revocarse o rotarse sin pérdida de acceso? |
@@ -146,21 +146,30 @@ No debe describirse el contenido como anónimo por estar cifrado ni afirmar que 
 
 ## 9. Escenarios específicos de seguridad
 
-### Clave de aplicación (`APP_KEY`) comprometida
+### Clave o keyring de cifrado del backend comprometidos
 
-- Este escenario es distinto de una exposición de Vault: en la beta `APP_KEY` cifra el teléfono y cualquier otro campo backend incluido expresamente, no el email ni el contenido privado del diario.
-- Confirmar de inmediato si la clave expuesta corresponde a producción y si permite descifrado retroactivo de backups o réplicas.
-- Rotar `APP_KEY` requiere re-cifrar todas las columnas afectadas antes de invalidar la clave anterior; planificar esa migración como parte de la preparación, no durante el incidente.
-- Cuantificar cuentas y campos afectados; no asumir que E2EE del diario protege esos datos de cuenta.
-- Verificar que no existan columnas legacy de contenido Vault. Si aparecieran, el incidente también demuestra que el gate de lanzamiento falló y su alcance debe ampliarse.
+- Este escenario es distinto de una exposición del Vault: el backend puede recuperar el email para operaciones autorizadas, mientras que no puede descifrar el contenido privado del diario.
+- Confirmar de inmediato qué versión de clave corresponde a producción y si permite descifrado retroactivo del email en base de datos, réplicas, exportaciones o backups.
+- Rotar la clave exige mantener lectura controlada de versiones anteriores y re-cifrar los valores afectados antes de retirar cada versión; este procedimiento debe estar ensayado antes del incidente.
+- Cuantificar cuentas, copias y campos afectados; no asumir que el E2EE del diario protege el email.
+- Evaluar conjuntamente la exposición de `email_lookup`: no revela por sí solo el email, pero permite comprobaciones exactas y correlación si un tercero dispone de candidatos.
+- Verificar que no existan columnas legacy de contenido Vault, nombre o teléfono de cuenta. Si aparecieran, el incidente también demuestra que fallaron los controles de minimización y su alcance debe ampliarse.
 
 ### Exposición de estructura relacional
 
-- identificar fases, etiquetas, motivos de cierre, historiales, hitos, fechas, ratings, rasgos, asociaciones, `everMatched` y correlaciones expuestos;
+- identificar situaciones, `match_status_id`, primera situación y fecha de match, motivos de cierre, períodos, hitos, fechas, satisfacción, ratings, rasgos, asociaciones y correlaciones expuestos;
 - determinar si permiten inferir vida afectiva o sexual aunque no exista texto Vault;
 - incluir a terceras personas descritas al cuantificar afectados y consecuencias;
 - evaluar secuencias y combinaciones singulares que aumenten el riesgo de reidentificación;
 - tratar la exposición como incidente de datos personales aunque el Vault ciphertext permanezca seguro.
+
+### Abuso de capacidades o cuota del Vault
+
+- identificar cuentas, dispositivos, tipos de objeto, tamaños, reservas, reintentos y capacidades implicados sin inspeccionar el contenido cifrado;
+- comprobar los límites de 65.536 bytes por objeto y 25 MiB lógicos por cuenta, así como el umbral informativo del 80 %;
+- distinguir una reserva vigente de una subida incompleta vencida y verificar su liberación y limpieza tras 24 horas;
+- contener el abuso mediante metadata, conteos y señales técnicas, sin registrar ciphertext completo ni intentar clasificar el contenido privado;
+- preservar las intenciones durables del dispositivo para no confundir reintentos legítimos con abuso.
 
 ### Credencial Apple, OTP o continuación expuestos
 
@@ -221,6 +230,7 @@ El procedimiento no debe pedir al usuario que envíe su frase o contraseña de r
 - plantilla interna de cronología y evaluación;
 - acceso de emergencia con MFA y registro;
 - export probado de logs de API, base, objetos y proveedores;
+- inventario y procedimiento probado de rotación del keyring que protege el email;
 - contrato y canal urgente por proveedor;
 - simulación anual que incluya datos funcionales, ciphertext y secreto;
 - simulación de exposición de estructura relacional y reidentificación de datos conservados tras la baja;

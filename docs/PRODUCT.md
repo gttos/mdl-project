@@ -2,7 +2,7 @@
 
 Este es el **índice del catálogo de reglas funcionales de MyDuckingLife**. Las reglas se reparten por dominio en los documentos enlazados abajo; cada identificador tiene una única definición. Describen lo que el producto debe hacer, aunque su implementación esté pendiente.
 
-**Estado del conjunto: EN REVISIÓN.** Primero se revisará cada archivo con Producto. Después se comprobará regla por regla en las aplicaciones, API y documentación. Esta reorganización no certifica implementación, tests, despliegues ni cumplimiento jurídico.
+**Estado del conjunto: FINALIZADO.** Producto cerró expresamente la revisión del catálogo. Este estado fija las reglas funcionales vigentes, pero no certifica implementación, tests, despliegues ni cumplimiento jurídico. Las decisiones identificadas como pendientes permanecen abiertas y ningún agente puede inventar su resolución.
 
 Los documentos técnicos, los planes y el blueprint sirven como fuentes de información. No sustituyen las decisiones de producto ni convierten un comportamiento implementado en una regla. Si contradicen una regla, la discrepancia debe revisarse; no se cambia la regla para acomodar el código.
 
@@ -14,16 +14,16 @@ Legal mantiene su autoridad sobre privacidad, retención, derechos y cumplimient
 | Documento | Contenido | Estado |
 |---|---|---|
 | <a id="3-cuenta-autenticación-y-sesión"></a><a id="32-recuperación-de-la-contraseña-de-acceso"></a><a id="36-sign-in-with-apple"></a>[Cuenta de usuario](rules/ACCOUNT.md) | Alta y acceso, verificación, Apple, perfil de la cuenta de usuario, ajustes y recuperación de acceso. | FINALIZADO |
-| <a id="4-alta-y-perfil-de-un-crush"></a><a id="41-datos-obligatorios"></a><a id="43-edición-del-perfil"></a><a id="44-archivar-y-eliminar"></a>[Crush y perfil del Crush](rules/CRUSH.md) | Alta, datos y edición del perfil del Crush, proyecciones de match, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación. | EN REVISIÓN |
-| <a id="6-experiencias"></a><a id="62-edición"></a><a id="63-borrado"></a>[Experiencias](rules/EXPERIENCES.md) | Experiencia inicial y posteriores: datos, fechas, creación, edición, eliminación y vinculación con relaciones. | EN REVISIÓN |
-| <a id="7-relaciones"></a><a id="71-cronología"></a><a id="72-match-status"></a><a id="73-situaciones-y-trayectos-permitidos"></a><a id="74-cierre"></a><a id="75-registrar-corregir-y-eliminar"></a>[Relaciones](rules/RELATIONSHIPS.md) | Situaciones, períodos, hitos, match, trayectos, cierre y acciones latest-only. | EN REVISIÓN |
-| <a id="81-contenido-e-identidad"></a><a id="83-acciones"></a><a id="84-actividad-reciente-de-home"></a>[Timeline y Home](rules/TIMELINE.md) | Presentación de la historia, orden, agrupación, acciones disponibles y actividad reciente de Home. | EN REVISIÓN |
-| <a id="10-vault-privacidad-y-fotos"></a><a id="103-borrado-dirigido"></a>[Vault](rules/VAULT.md) | Contenido privado, creación, bloqueo, recuperación, sustitución de dispositivo y retirada de contenido. | EN REVISIÓN |
-| <a id="9-escrituras-durables-y-sincronización-visible"></a>[Guardado y sincronización](rules/SYNC.md) | Qué significa guardar, cambios pendientes, conflictos, reintentos, corrección y descarte. | EN REVISIÓN |
-| <a id="12-estadísticas-e-ia"></a><a id="121-estadísticas"></a><a id="122-ia-e-inferencias"></a><a id="123-alcance-entre-cuentas"></a>[Estadísticas e IA](rules/STATISTICS.md) | Dashboard personal de la beta, cálculos, ausencia de datos y límites de la IA y de los agregados entre cuentas. | EN REVISIÓN |
-| [Uso de la aplicación](rules/UX.md) | Tutoriales informativos, formularios, mensajes, errores, accesibilidad, carga, vacíos y desconexión. | EN REVISIÓN |
-| <a id="15-baja-seudonimización-e-inactividad"></a><a id="16-procesos-automáticos-y-plazos"></a>[Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md) | Baja voluntaria o por inactividad, seudonimización, destrucción, conservación y tareas automáticas. | EN REVISIÓN |
-| [Privacidad, seguridad y derechos](rules/PRIVACY.md) | Aislamiento entre cuentas, protección de información, diagnóstico, soporte y ejercicio de derechos. | EN REVISIÓN |
+| <a id="4-alta-y-perfil-de-un-crush"></a><a id="41-datos-obligatorios"></a><a id="42-resultado-de-match"></a><a id="43-edición-del-perfil"></a><a id="44-archivar-y-eliminar"></a>[Crush y perfil del Crush](rules/CRUSH.md) | Alta, datos y edición del perfil del Crush, resultado de match, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación. | FINALIZADO |
+| <a id="6-experiencias"></a><a id="62-edición"></a><a id="63-borrado"></a>[Experiencias](rules/EXPERIENCES.md) | Experiencia inicial y posteriores: datos, fechas, creación, edición, eliminación y vinculación con relaciones. | FINALIZADO |
+| <a id="7-relaciones"></a><a id="71-cronología"></a><a id="73-situaciones-y-trayectos-permitidos"></a><a id="74-cierre"></a><a id="75-registrar-corregir-y-eliminar"></a>[Relaciones](rules/RELATIONSHIPS.md) | Situaciones, períodos, hitos, evidencia relacional de match, trayectos, cierre y acciones latest-only. | FINALIZADO |
+| <a id="81-contenido-e-identidad"></a><a id="83-acciones"></a><a id="84-actividad-reciente-de-home"></a>[Timeline y Home](rules/TIMELINE.md) | Presentación de la historia, orden, agrupación, acciones disponibles y actividad reciente de Home. | FINALIZADO |
+| <a id="10-vault-privacidad-y-fotos"></a><a id="103-borrado-dirigido"></a>[Vault](rules/VAULT.md) | Contenido privado, creación, bloqueo, recuperación, sustitución de dispositivo y retirada de contenido. | FINALIZADO |
+| <a id="9-escrituras-durables-y-sincronización-visible"></a>[Guardado y sincronización](rules/SYNC.md) | Qué significa guardar, cambios pendientes, conflictos, reintentos, corrección y descarte. | FINALIZADO |
+| <a id="12-estadísticas"></a><a id="121-estadísticas"></a><a id="123-alcance-entre-cuentas"></a>[Estadísticas](rules/STATISTICS.md) | Dashboard personal de la beta, cálculos, ausencia de datos, métricas excluidas y alcance entre cuentas. | FINALIZADO |
+| [Uso de la aplicación](rules/UX.md) | Tutoriales informativos, formularios, mensajes, errores, accesibilidad, carga, vacíos y desconexión. | FINALIZADO |
+| <a id="15-baja-seudonimización-e-inactividad"></a><a id="16-procesos-automáticos-y-plazos"></a>[Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md) | Baja voluntaria o por inactividad, seudonimización, destrucción, conservación y tareas automáticas. | FINALIZADO |
+| [Privacidad, seguridad y derechos](rules/PRIVACY.md) | Aislamiento entre cuentas, protección de información, diagnóstico, soporte y ejercicio de derechos. | FINALIZADO |
 
 <a id="revision"></a>
 ## Cómo se revisan y mantienen las reglas
@@ -32,7 +32,7 @@ Legal mantiene su autoridad sobre privacidad, retención, derechos y cumplimient
 - Un archivo finalizado conserva sus decisiones. Cambiar una regla exige reabrir expresamente esa parte de la revisión; mover o reordenar documentos no autoriza a alterar su significado.
 - Se conservan los identificadores `BR-*` y `RP-*`; no se reutilizan para una regla distinta. Otros documentos enlazan la definición que corresponda.
 - Las decisiones pendientes pertenecen al documento del dominio. Este índice permite encontrarlas sin mantener otra copia.
-- El estado de revisión de Producto y el cumplimiento de la implementación son cosas distintas. La auditoría de cumplimiento y la actualización de las instrucciones de agentes como reglas finalizadas se harán después de cerrar esta revisión.
+- El estado de revisión de Producto y el cumplimiento de la implementación son cosas distintas. El catálogo finalizado se contrasta después con código, tests y documentación local sin adaptar las reglas al comportamiento encontrado.
 - Se usa **perfil de la cuenta de usuario** para quien utiliza MDL y **perfil del Crush** para la ficha privada de la persona registrada en el diario.
 
 <a id="1-propósito-y-límites"></a>
@@ -82,7 +82,7 @@ Definir una regla no demuestra que esté implementada ni permite distribuir una 
 
 - **RP-LAN-002.** El acceso con Apple no se distribuye públicamente hasta resolver la vinculación con cuentas existentes y comprobar duplicados, revocación, funcionamiento de Private Relay, avisos y textos legales.
 - **RP-LAN-003.** Antes del lanzamiento deben estar comprobados el vencimiento de cuentas provisionales, la destrucción diferida del Vault y la exclusión y eliminación correcta de las fotos locales.
-- **RP-LAN-004.** Android requiere validación propia y compatibilidad del Vault con las demás plataformas. La disponibilidad de Apple en Android sigue pendiente de decisión.
+- **RP-LAN-004.** Android requiere validación propia y compatibilidad del Vault con las demás plataformas. Durante la beta ofrece acceso mediante email y contraseña y no muestra «Continuar con Apple». Una cuenta creada con Apple puede establecer su primera contraseña mediante el email verificado conforme a RP-APL-015 y acceder desde Android a la misma cuenta y al mismo Vault, sin retirar su vínculo Apple.
 
 <a id="18-decisiones-pendientes"></a>
 <a id="decisiones-pendientes"></a>
@@ -91,15 +91,8 @@ Definir una regla no demuestra que esté implementada ni permite distribuir una 
 | Documento | Decisiones |
 |---|---|
 | [Relaciones](rules/RELATIONSHIPS.md#decisiones-pendientes) | [DEC-13](rules/RELATIONSHIPS.md#dec-13) |
-| [Vault](rules/VAULT.md#decisiones-pendientes) | [DEC-10](rules/VAULT.md#dec-10) |
-| [Estadísticas e IA](rules/STATISTICS.md#decisiones-pendientes) | [DEC-08](rules/STATISTICS.md#dec-08) |
-| [Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md#decisiones-pendientes) | [DEC-02](rules/DATA_LIFECYCLE.md#dec-02), [DEC-03](rules/DATA_LIFECYCLE.md#dec-03), [DEC-09](rules/DATA_LIFECYCLE.md#dec-09) |
+| [Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md#decisiones-pendientes) | [DEC-02](rules/DATA_LIFECYCLE.md#dec-02), [DEC-09](rules/DATA_LIFECYCLE.md#dec-09) |
 | [Privacidad, seguridad y derechos](rules/PRIVACY.md#decisiones-pendientes) | [DEC-12](rules/PRIVACY.md#dec-12) |
-| Cuenta y plataformas | [DEC-11](#dec-11) |
-
-| ID | Decisión pendiente | Lo ya fijado |
-|---|---|---|
-| <a id="dec-11"></a>DEC-11 | Apple Android y condiciones de distribución por plataforma. | Paridad sin activación implícita de proveedores. |
 
 <a id="fuentes"></a>
 ## Fuentes de consulta
@@ -114,7 +107,7 @@ Los documentos de [arquitectura](ARCHITECTURE.md), [Timeline](TIMELINE.md), [Vau
 | Estadísticas | [Statistics](STATISTICS.md), [detalle API](../../api/docs/STATISTICS.md). |
 | UX | [Formularios](plans/active/form-ux-performance/README.md), [vacíos](plans/active/empty-state-standardization/README.md). |
 | Automatismos | [Operación API](../../api/docs/OPERATIONS.md), scheduler `api/routes/console.php` consultado mediante MCP. |
-| Privacidad | [Expediente Legal](legal/README.md) y [ciclo de vida](legal/04_MDL_Ciclo_Vida_Retencion_Derechos.md), conservados sin modificación. |
+| Privacidad | [Expediente Legal](legal/README.md) y [ciclo de vida](legal/04_MDL_Ciclo_Vida_Retencion_Derechos.md), bajo autoridad jurídica propia. |
 | Plataformas | [Android](plans/active/android-parity/README.md), [entorno local](plans/active/local-integration-environment/README.md), [arquitectura](ARCHITECTURE.md). |
 
 La revisión de reglas y el contraste posterior se coordinan mediante [business-rule-integrity](plans/active/business-rule-integrity/README.md). No se mezclan aquí estados «cumple/parcial/incumple», símbolos de código ni resultados de tests.

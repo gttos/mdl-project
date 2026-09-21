@@ -213,7 +213,7 @@ Si el formulario sólo modifica datos de cuenta no pertenecientes al Vault, se o
 
 **Precondiciones.** Sesión propia, Vault desbloqueado y ausencia de otra creación root pendiente para el mismo UUID.
 
-**Entradas.** Los campos obligatorios y su ubicación se detallan en §5.3. La experiencia inicial es opcional como bloque, pero si se inicia debe quedar completa.
+**Entradas.** Los campos obligatorios y su ubicación se detallan en §5.3. La experiencia inicial es obligatoria y debe quedar completa.
 
 **Flujo principal.**
 
@@ -221,7 +221,7 @@ El alta crea un bundle inicial compuesto por:
 
 - crush;
 - primer período relacional obligatorio con fecha igual a `met_at`;
-- experiencia inicial opcional y completa, también en `met_at`.
+- experiencia inicial obligatoria y completa, también en `met_at`.
 
 El cliente congela UUID y día civil antes de enviar. Un retry reutiliza la misma identidad y no crea un duplicado.
 
@@ -241,17 +241,17 @@ API recibe la identidad del Crush, edad y fecha de referencia, país, categoría
 
 ### 4.8 CU-07 — Experiencias
 
-**Objetivo.** Registrar un acontecimiento en un día civil, solo o vinculado a un cambio relacional.
+**Objetivo.** Registrar un acontecimiento en un día civil como experiencia independiente dentro de un período o vinculado a un cambio relacional.
 
 **Entradas.** Fecha y satisfacción estructurales; lugar y descripción privados. Los campos exactos están en §5.3.
 
 **Flujo principal.**
 
-Una experiencia pertenece a un crush y a un día civil. Contiene fecha, satisfacción y asociaciones estructurales; lugar y descripción viven en el Vault cifrado.
+Una experiencia pertenece a un crush, a un único período relacional y a un día civil. Contiene fecha, satisfacción y asociaciones estructurales; lugar y descripción viven en el Vault cifrado.
 
-Sólo puede existir una experiencia por crush y día. Una experiencia puede vincularse a un cambio de relación del mismo día y ambas se presentan como una unidad en el Timeline. El Timeline se reconstruye a partir de las entidades y sus correlaciones; no es una fuente independiente de datos.
+Sólo puede existir una experiencia por crush y día. Una experiencia puede existir sin hito relacional, pero nunca fuera de un período; toda creación de período o cambio relacional exige una experiencia vinculada del mismo día. Ambas partes se presentan como una unidad en el Timeline. El Timeline se reconstruye a partir de las entidades y sus correlaciones; no es una fuente independiente de datos.
 
-**Edición y borrado.** La experiencia conserva su UUID al editarse. Si está vinculada, la fecha se mantiene alineada con el evento relacional. Eliminarla no elimina ni reabre la relación; libera el slot de experiencia de ese día.
+**Edición y borrado.** La experiencia conserva su UUID al editarse. Si está vinculada a un hito, la fecha se mantiene alineada con él. Eliminar una experiencia vinculada al último hito posterior eliminable elimina ambas partes atómicamente; si el hito ya es histórico, se rechaza. Eliminar sólo ese hito conserva la experiencia como independiente dentro del mismo período. Eliminar un período no inicial elegible elimina su hito inicial, sus hitos posteriores y todas sus experiencias; ninguna queda fuera de un período. La experiencia del bloque inicial nunca se elimina por separado del Crush.
 
 ### 4.9 CU-08 — Relaciones por fases, etiquetas y períodos
 
@@ -271,7 +271,7 @@ Sólo puede existir una experiencia por crush y día. Una experiencia puede vinc
 
 **Resultado.** Timeline y estadísticas pueden reconstruir fases, etiquetas, duración y reaperturas sin acceder a las notas privadas.
 
-**Alternativas y límites.** Una experiencia posterior al cierre se registra con advertencia cuando corresponde, pero no reabre automáticamente el vínculo; “crear nuevo período” siempre es una acción explícita. Borrar una experiencia vinculada conserva el hito relacional. Sólo el último período cerrado y no inicial admite borrado correctivo, sin reabrir el anterior.
+**Alternativas y límites.** Mientras existe un período vivo, una experiencia puede registrarse como independiente dentro de él o junto con un cambio relacional. Si el período más reciente está cerrado, la siguiente experiencia exige elegir la situación inicial y crea atómicamente el período nuevo y su hito inicial; no se confirma primero para pedir la relación después. Borrar una experiencia vinculada al último hito posterior elimina también ese hito; un vínculo histórico se conserva porque el borrado se rechaza. Sólo el último período cerrado y no inicial admite borrado correctivo: se elimina completo con todos sus hitos y experiencias, sin reabrir el anterior ni dejar experiencias sin período.
 
 ### 4.10 CU-09 — Timeline
 
@@ -344,7 +344,7 @@ No se incluyen mockups ni capturas. Esta matriz identifica qué debe permitir ca
 | Crush | Ficha privada de una tercera persona | UUID, edad y `age_as_of`, país, categoría, rasgos físicos, ratings, `met_at`, archivo y derivados | nombre, `gender_id`, profesión, contacto/redes y día/mes de cumpleaños |
 | Experience | Acontecimiento con un crush | UUID, crush, fecha, satisfacción, correlación y vínculo con relación | lugar y descripción |
 | Relationship / período | Evolución cronológica del vínculo | UUID, crush, fase, etiqueta catalogada, motivo catalogado, inicio/fin, historia de fases/etiquetas, `everMatched`, correlación y experiencia vinculada | nota de cierre, explicación libre y texto asociado a valores personalizados |
-| PeriodChange / hito | Cambio real ocurrido dentro de un período | UUID, período, crush, fecha efectiva, fase/etiqueta asociadas y vínculo opcional con Experience | El texto privado del cambio permanece en el snapshot Vault correspondiente |
+| PeriodChange / hito | Cambio real ocurrido dentro de un período | UUID, período, crush, fecha efectiva, fase/etiqueta asociadas y vínculo obligatorio con Experience | La explicación privada permanece en el payload Vault de la Experience vinculada |
 | Vault | Contenedor E2EE de una cuenta | propietario, versión criptográfica y estado | No contiene plaintext en backend |
 | VaultBlob | Revisión cifrada de una entidad | tipo, tamaño, hash, ruta, versión, secuencia, timestamps y soft delete | snapshot ciphertext |
 | VaultEntityBinding | Vínculo opaco entre entidad y revisiones | tipo, ID funcional y token opaco | El token no revela el contenido sin VMK |
@@ -408,8 +408,8 @@ Las tablas siguientes describen categorías funcionales. El dominio público hab
 |---|---|---:|---:|
 | UUID, crush y propietario | Automáticos | Sí | El binding opaco identifica la experiencia; no son contenido del payload Vault |
 | Día civil | Obligatorio | Sí | No |
-| Satisfacción | Estructurada; en experiencia inicial forma parte del bloque todo-o-nada | ID estructurado | No |
-| Lugar y descripción | Opcionales en experiencia normal; ambos requeridos si se inicia el bloque de experiencia inicial | No | Sí |
+| Satisfacción | Obligatoria en toda experiencia | ID estructurado | No |
+| Lugar y descripción | Obligatorios en toda experiencia | No | Sí |
 | Relación/correlación asociada | Opcional o automática | Sí | No |
 | Timestamps y estado de borrado | Automáticos | Sí | Metadata, no contenido privado |
 
@@ -725,14 +725,15 @@ Una librería open source que procesa datos sólo dentro de la app no se present
 
 ## 13. Reglas de negocio esenciales
 
-- El primer período relacional, la experiencia inicial opcional y el crush comparten el bundle de `met_at`.
+- El Crush, el primer período relacional, su hito inicial y la experiencia inicial obligatoria forman el bloque inicial de `met_at`.
 - Sólo existe una Experience por crush y día civil; cada Experience puede vincular como máximo un cambio real de período del mismo día.
+- Toda Experience pertenece exactamente a un período. Puede existir sin hito relacional; toda creación de período o cambio relacional exige una Experience vinculada.
 - Fase, etiqueta y motivo de cierre son dimensiones distintas y no se sustituyen entre sí.
 - Los historiales de fase y etiqueta son append-only. La etiqueta sólo se selecciona o cambia durante Involucrado y puede conservarse como contexto histórico al cerrar.
 - Un período sólo conserva su fase o avanza; un salto registra el destino real sin fabricar hitos intermedios.
 - Cerrar y reabrir crea períodos separados; los huecos no se rellenan artificialmente.
 - Sólo el último período cerrado admite las correcciones históricas acotadas definidas.
-- Borrar una Experience vinculada conserva el hito relacional; sólo el último período cerrado y no inicial admite borrado correctivo, sin reabrir el anterior.
+- Borrar una Experience vinculada al último hito posterior elimina ambas partes atómicamente; un vínculo histórico y el bloque inicial no admiten borrado parcial. Borrar sólo el último hito posterior conserva su Experience como independiente dentro del mismo período. Borrar el último período cerrado y no inicial elimina todos sus hitos y Experiences, sin dejar ninguna fuera de un período.
 - Una Experience y su cambio de período se aplican atómicamente y pueden mostrarse en una única tarjeta.
 - `everMatched` se vuelve verdadero sólo al alcanzar Involucrado y nunca retrocede.
 - El nombre del crush, lugar, descripción, detalle personalizado y nota de cierre nunca forman parte del request funcional en plaintext.
@@ -799,7 +800,7 @@ Este Blueprint define la beta final. La verificación de release confirma que:
 | Etiqueta de vínculo | Clasificación de un tramo Involucrado: Citas, Casual, FWB, Relación u Otro |
 | Motivo de cierre | Uno de los once códigos del catálogo que explica el cierre sin incluir su nota privada |
 | `everMatched` | Derivado monotónico que indica si algún período alcanzó Involucrado |
-| Bundle inicial | Crush + primer período relacional + experiencia inicial opcional en `met_at` |
+| Bundle inicial | Crush + primer período relacional + experiencia inicial obligatoria en `met_at` |
 | Timeline | Vista reconstruida de altas, experiencias y relaciones |
 | Vault | Almacén E2EE del contenido privado y snapshots durables |
 | VMK | Clave maestra aleatoria del Vault, generada y usada en el dispositivo |

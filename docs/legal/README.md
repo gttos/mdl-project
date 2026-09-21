@@ -1,8 +1,8 @@
 # Expediente legal y de privacidad de MDL
 
 > **Destinatario:** abogado, DPO o especialista en privacidad que no conoce MDL.
-> **Fecha de corte documental:** 14 de septiembre de 2026.
-> **Modelo descrito:** funcionamiento de la beta de lanzamiento con Vault E2EE, verificación de email, Sign in with Apple y relaciones nativas por períodos.
+> **Fecha de corte documental:** 21 de septiembre de 2026.
+> **Modelo descrito:** funcionamiento objetivo de la beta con clientes iOS y Android, Vault E2EE, verificación de email, Sign in with Apple sólo en iOS y relaciones por situaciones, períodos e hitos.
 > **Naturaleza:** descripción técnica y preguntas para revisión profesional; no contiene conclusiones jurídicas aprobadas.
 
 ## Propósito
@@ -13,21 +13,21 @@ El expediente describe el contrato funcional final de la beta. La evidencia de d
 
 ## Resumen ejecutivo
 
-MDL es un diario iOS privado sobre vínculos y experiencias afectivas. Gran parte de la información se refiere a terceras personas que normalmente no tienen cuenta y algunos campos permiten inferencias sobre vida afectiva o sexual.
+MDL es una aplicación privada para iOS y Android sobre vínculos y experiencias afectivas. Gran parte de la información se refiere a terceras personas que normalmente no tienen cuenta y algunos campos permiten inferencias sobre vida afectiva o sexual.
 
 El modelo de lanzamiento separa:
 
-1. **Cuenta y datos funcionales legibles por API:** identidad de la cuenta, IDs, fechas, fases, etiquetas, motivos de cierre, historiales relacionales, valoraciones, asociaciones, rasgos y atributos necesarios para operar Timeline y estadísticas.
-2. **Contenido privado E2EE:** nombre/contacto/redes/cumpleaños del crush, lugar/descripción de experiencias y nota de cierre. iOS lo cifra con una VMK por usuario antes de transferirlo; API y S3 reciben ciphertext y metadata, no VMK ni plaintext.
-3. **Fotos locales:** permanecen en el dispositivo y no se sincronizan con MDL en la beta.
-4. **Datos de seguridad y proveedores:** IP, user agent, eventos, trazas, dirección de email y metadata técnica según el flujo.
-5. **Datos derivados:** `everMatched`, ratings, cronología y estadísticas personales; que sean derivados no los vuelve anónimos.
+1. **Cuenta:** UUID, fecha completa de nacimiento declarada, IDs opcionales de género y país, plan y estados técnicos. El email se conserva cifrado pero recuperable por la API para las operaciones autorizadas, junto con un índice exacto no reversible; la contraseña sólo existe como verificador no reversible cuando la cuenta dispone de ella. Nombre y teléfono no forman parte del perfil de cuenta.
+2. **Estructura funcional legible por API:** IDs, fechas, catálogos del Crush, valoraciones, satisfacción, situaciones relacionales, períodos, hitos, motivos de cierre, asociaciones y proyecciones de match necesarias para reglas, Timeline y estadísticas personales.
+3. **Contenido privado E2EE:** nombre, género, profesión, WhatsApp, redes y cumpleaños del Crush, además de `place` y `description` de cada experiencia. El cliente lo cifra antes de transferirlo; API y S3 reciben ciphertext y metadata, no VMK ni plaintext.
+4. **Fotos locales:** permanecen exclusivamente en el almacenamiento del dispositivo durante la beta.
+5. **Datos de seguridad y proveedores:** IP, user agent, eventos, trazas, email cifrado recuperable y metadata técnica según cada finalidad aprobada.
 
-El modelo relacional de la beta usa períodos con fases, etiquetas opcionales durante Involucrado, motivos catalogados de cierre e historiales append-only de fases y etiquetas. API conserva esa estructura, fechas, asociaciones, hitos y el derivado monotónico `everMatched`; el texto libre permanece en Vault. Esta granularidad puede revelar o permitir inferir intimidad aunque no exista plaintext en backend.
+El modelo relacional utiliza un catálogo cerrado de diez `RelationshipSituation`, períodos e hitos. Cada hito tiene exactamente una experiencia vinculada; períodos e hitos no poseen texto ni payload Vault propios. El Crush conserva `match_status_id` (`UNKNOWN`, `MATCH` o `NO_MATCH`) y, cuando existe, la primera situación y fecha de match. Esta estructura puede revelar o permitir inferir intimidad aunque no exista texto legible en backend.
 
 ## Cuestión crítica sobre “anonimización”
 
-La baja sobrescribe identificadores directos, retira el Vault y conserva únicamente la estructura autorizada para estadísticas agregadas sin PII. Si permanecen filas enlazadas por UUID, secuencias o combinaciones raras, el resultado puede ser seudonimizado y seguir siendo dato personal. La asesoría debe calificar esa conservación y fijar finalidad, base, plazo, acceso y salvaguardas; los textos públicos no deben llamarla anónima sin esa evaluación.
+La baja sobrescribe identificadores directos y retira el Vault. Producto propone conservar fuera del uso ordinario una estructura seudonimizada para posibles estadísticas agregadas, pero ese uso permanece deshabilitado hasta contar con criterio jurídico. Si permanecen filas enlazadas por UUID, secuencias o combinaciones raras, el resultado puede seguir siendo dato personal. La asesoría debe calificar esa conservación y fijar finalidad, base, campos, plazo, acceso y salvaguardas; los textos públicos no deben llamarla anónima sin esa evaluación.
 
 ## Orden de lectura
 
@@ -53,9 +53,9 @@ Como contexto funcional complementario puede consultarse el [blueprint de produc
 - procedimiento de acceso, rectificación, supresión, oposición, restricción y portabilidad;
 - Registro de Actividades de Tratamiento;
 - revisión de DPA, regiones, subencargados y transferencias;
-- criterio sobre edad mínima y mecanismo de verificación proporcionado;
+- criterio sobre la suficiencia de la edad mínima de 18 años y el mecanismo de declaración/validación proporcionado;
 - procedimiento de incidentes y textos de notificación;
-- límites de las afirmaciones públicas sobre E2EE, anonimización e IA.
+- límites de las afirmaciones públicas sobre E2EE, seudonimización, borrado, fotos locales y dispositivo único.
 
 ## Cómo interpretar el expediente
 
@@ -77,7 +77,7 @@ E2EE reduce la exposición del contenido privado, pero no elimina el tratamiento
 - canal y sistema de tickets para derechos sin copiar contenido íntimo;
 - textos de onboarding, recovery, archivo, borrado, baja e inactividad;
 - calificación jurídica y salvaguardas de la estructura conservada para estadísticas después de la baja;
-- evidencia de configuración y disclosure de verificación de email y Sign in with Apple; Google OAuth e IA no forman parte de la beta.
+- evidencia de configuración y disclosure de verificación de email y Sign in with Apple en iOS; Android utiliza email y contraseña durante la beta.
 
 ## Condición de uso externo
 

@@ -1,6 +1,6 @@
 # Reglas de producto — Guardado y sincronización
 
-**Estado de revisión: EN REVISIÓN.** Este archivo sólo se marca como finalizado cuando la persona responsable de Producto lo indique expresamente. Ese estado no certifica implementación ni aprobación jurídica.
+**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica; las decisiones expresamente pendientes continúan abiertas y no autorizan a inventar comportamiento.
 
 [Índice de reglas](../PRODUCT.md) · Qué significa guardar, cambios pendientes, conflictos, reintentos, corrección y descarte.
 

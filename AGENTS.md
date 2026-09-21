@@ -14,6 +14,10 @@ Estas reglas se aplican por igual a Codex, ChatGPT, Claude Code y cualquier otro
 
 Las decisiones funcionales se incorporan primero a `PRODUCT.md`; el plan activo registra su ejecución y escenarios por ID. Si una definición anterior de un plan contradice el catálogo, debe reconciliarse antes de implementar esa parte. Si un plan local contradice Product, Product prevalece. Esto no modifica la autoridad jurídica de Legal.
 
+### Catálogo inquebrantable
+
+Las reglas finalizadas de `docs/PRODUCT.md` y `docs/rules/` son restricciones obligatorias y no se reinterpretan para acomodar código, tests, planes, specs o documentación local. Ante cualquier contradicción, excepción no escrita, dependencia de una decisión pendiente o duda razonable de interpretación, se detiene la tarea completa antes de seguir modificando archivos. El agente identifica el ID afectado y pregunta al usuario si debe reabrirse/cambiarse la regla o adaptarse el trabajo para cumplirla. Sólo una decisión explícita del usuario permite cambiar Product, siempre antes que los consumidores técnicos. El protocolo completo de bloqueo está en `../AGENTS.md` §2.
+
 Legal es autoridad en privacidad, retención, derechos y cumplimiento. Una contradicción entre Product/código y Legal no se resuelve por jerarquía automática: se documenta junto a la regla afectada y se eleva a revisión humana/legal.
 
 ## Qué se documenta aquí

@@ -1,15 +1,16 @@
 # Reglas de producto — Vault
 
-**Estado de revisión: EN REVISIÓN.** Este archivo sólo se marca como finalizado cuando la persona responsable de Producto lo indique expresamente. Ese estado no certifica implementación ni aprobación jurídica.
+**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica; las decisiones expresamente pendientes continúan abiertas y no autorizan a inventar comportamiento.
 
 [Índice de reglas](../PRODUCT.md) · Contenido privado, creación, bloqueo, recuperación, sustitución de dispositivo y retirada de contenido.
 
 <a id="contenido"></a>
 ## Contenido privado y datos funcionales
 
-- **RP-VLT-001.** El contenido funcional privado de la beta está formado exactamente por: los campos del perfil enumerados como «Vault opaco» en el [inventario del Crush](CRUSH.md#inventario); `place` y `description` de cada experiencia; y `closure_note` de cada período relacional. Cada campo pertenece al elemento identificado en su documento de dominio.
+- **RP-VLT-001.** El contenido funcional privado de la beta está formado exactamente por los campos del perfil enumerados como «Vault opaco» en el [inventario del Crush](CRUSH.md#inventario) y por `place` y `description` de cada experiencia. Cada campo pertenece al elemento identificado en su documento de dominio.
 - **RP-VLT-002.** La API funcional no acepta, devuelve ni conserva una copia en claro de los datos privados. Las aplicaciones los muestran únicamente después de acceder al Vault.
-- **RP-VLT-003.** La API sólo interpreta la estructura enumerada en los inventarios de [Cuenta](ACCOUNT.md#inventario-cuenta), [Crush](CRUSH.md#inventario), [Experiencias](EXPERIENCES.md#inventario) y [Relaciones](RELATIONSHIPS.md#inventario). El ciphertext del Vault puede conservarse y recuperarse, pero su contenido funcional permanece opaco para el servidor.
+- **RP-VLT-003.** El dispositivo cifra cada payload privado antes de transferirlo y conserva localmente su entry cifrada. El Vault remoto recibe únicamente ciphertext y la metadata mínima necesaria como copia cifrada para sincronización y recuperación. La API sólo interpreta la estructura enumerada en los inventarios de [Cuenta](ACCOUNT.md#inventario-cuenta), [Crush](CRUSH.md#inventario), [Experiencias](EXPERIENCES.md#inventario) y [Relaciones](RELATIONSHIPS.md#inventario); el backend y el almacenamiento remoto no pueden interpretar el contenido privado. Ese contenido sólo se recupera en claro dentro de la memoria de un dispositivo autorizado después de desbloquear o recuperar el mismo Vault.
+- **RP-VLT-026.** Los inventarios de dominio son listas cerradas y sus tratamientos son excluyentes. Cada payload Vault contiene únicamente los campos marcados como «Vault opaco» para ese tipo de entidad; ningún campo clasificado como «API legible», «Administrado por el sistema», «Derivado por la API», «Sólo dispositivo» o equivalente se copia dentro del payload cifrado. El payload Vault de una experiencia contiene exactamente `place` y `description`. Un período o hito relacional no tiene payload Vault propio: cualquier contenido privado que explique ese acontecimiento pertenece a su experiencia vinculada.
 - **RP-VLT-004.** La clave principal del Vault se genera en el dispositivo y nunca llega en claro al servidor. Soporte nunca solicita esa clave ni los secretos de recuperación.
 
 <a id="inventario-servidor"></a>
@@ -21,12 +22,17 @@
 |---|---|---|
 | Vault de la cuenta | `id`, `user_id`, `crypto_version`, `kdf_algorithm`, `salt`, `kdf_memory_kb`, `kdf_iterations`, `kdf_parallelism`, `encrypted_vmk`, `vmk_nonce`, `vmk_auth_tag`, `is_active` | Identificar un único Vault, derivar la clave localmente y recuperar la clave principal sólo en su forma cifrada. |
 | Elemento cifrado | `id`, `vault_id`, `user_id`, `blob_type`, `content_type_hint`, `ciphertext_length`, `ciphertext_hash`, `remote_path`, `remote_storage`, `crypto_version`, `nonce`, `auth_tag`, `aad_hash`, `sequence_number`, `lookup_token` | Guardar, verificar, ordenar y recuperar ciphertext sin interpretarlo. |
-| Vínculo con una entidad funcional | `id`, `vault_id`, `user_id`, `entry_type`, `entity_id`, `lookup_token` | Localizar el elemento cifrado que pertenece a un Crush, experiencia o período sin copiar su contenido privado. |
+| Vínculo con una entidad funcional | `id`, `vault_id`, `user_id`, `entry_type`, `entity_id`, `lookup_token` | Localizar el elemento cifrado que pertenece a un Crush o experiencia sin copiar su contenido privado. |
 | Dispositivo autorizado | `id`, `vault_id`, `user_id`, `device_public_key_hash`, `device_fingerprint`, `authorized_at`, `last_seen_at`, `revoked_at`, `is_primary` | Aplicar la sustitución de dispositivo y registrar su estado sin almacenar la clave privada del dispositivo. |
 | Recuperación mediante contraseña del Vault | `id`, `vault_id`, `user_id`, `encrypted_vmk_backup`, `backup_nonce`, `backup_auth_tag`, `key_fingerprint`, `created_at`, `revoked_at` | Recuperar la misma clave principal mediante la contraseña del Vault, sin almacenar esa contraseña. |
 | Recuperación mediante frase | `id`, `vault_id`, `kdf_algorithm`, `salt`, `kdf_iterations`, `encrypted_vmk`, `nonce`, `auth_tag` | Recuperar la misma clave principal mediante la frase de 24 palabras, sin almacenar la frase. |
 
-- **RP-VLT-025.** `encrypted_vmk`, `encrypted_vmk_backup` y los blobs son material cifrado. `nonce`, `auth_tag`, hashes, fingerprints, tokens de búsqueda, parámetros de derivación, tamaños, tipos, rutas, versiones, secuencias y fechas son metadatos técnicos; ninguno autoriza al servidor a interpretar nombre, género, contactos, cumpleaños, lugar, descripción o nota de cierre.
+- **RP-VLT-025.** `encrypted_vmk`, `encrypted_vmk_backup` y los blobs son material cifrado. `nonce`, `auth_tag`, hashes, fingerprints, tokens de búsqueda, parámetros de derivación, tamaños, tipos, rutas, versiones, secuencias y fechas son metadatos técnicos; ninguno autoriza al servidor a interpretar nombre, género, contactos, cumpleaños, lugar o descripción.
+- **RP-VLT-027.** Cada objeto de ciphertext del Vault admite como máximo 65.536 bytes. El dispositivo valida el tamaño después de cifrar y antes de transferir; la API vuelve a validarlo antes de autorizar o confirmar la subida. Superar el límite rechaza la operación sin crear una versión confirmada y se comunica de forma comprensible. Las fotos no forman parte del Vault y se rigen por su contrato propio.
+- **RP-VLT-028.** Cada cuenta dispone de 25 MiB —26.214.400 bytes— de capacidad lógica total para su Vault remoto. La capacidad ocupada suma la última versión confirmada de cada elemento y el crecimiento reservado por subidas todavía no confirmadas; una revisión sustituida, retirada o en purga no consume nuevamente cuota. Una subida nueva reserva todo su tamaño declarado y una sustitución reserva únicamente el aumento respecto de la versión vigente. Reintentar la misma operación no duplica la reserva.
+- **RP-VLT-029.** Al alcanzar 20 MiB —el 80 % de la capacidad— la aplicación avisa de forma comprensible cuánto espacio está ocupado y cuál es el límite. Alcanzar la cuota sólo impide operaciones que aumenten la ocupación: siempre permite eliminar contenido y sustituirlo por otro de tamaño igual o menor. Un rechazo conserva íntegramente la versión vigente y explica cómo liberar espacio.
+- **RP-VLT-030.** La API controla capacidad, errores y abuso mediante la metadata autorizada del Vault: bytes confirmados o reservados, cantidad y antigüedad de subidas incompletas, ritmo de operaciones, fallos de verificación y acumulación anómala de revisiones. Puede aplicar alertas y límites de frecuencia sobre esas señales sin descifrar, interpretar ni clasificar el contenido privado. La cantidad de Crushes o experiencias, por sí sola, no constituye abuso.
+- **RP-VLT-031.** Una capacidad de subida que no se confirma ni se cancela caduca 24 horas después de su creación. Desde ese momento no puede confirmarse, deja de reservar cuota y la limpieza automática retira cualquier objeto y metadata incompletos. La caducidad no altera la última versión confirmada ni elimina la operación pendiente del dispositivo; un reintento posterior solicita una capacidad nueva para esa misma intención durable.
 
 <a id="recuperacion"></a>
 ## Creación, actualización y recuperación del Vault
@@ -59,12 +65,3 @@
 - **RP-VLT-022.** El progreso de una eliminación se comunica de manera comprensible. Consultarlo no inicia operaciones nuevas ni muestra avances ficticios.
 
 La diferencia entre retirada del uso normal y destrucción física se define en [Ciclo de vida](DATA_LIFECYCLE.md#retirada-y-destruccion). Las [fotos del Crush](CRUSH.md#fotos) tienen sus propias reglas.
-
-<a id="decisiones-pendientes"></a>
-## Decisiones pendientes
-
-Estas decisiones siguen abiertas. La documentación técnica y el comportamiento implementado son referencias y no las resuelven por sí solos.
-
-| ID | Decisión pendiente | Lo ya fijado |
-|---|---|---|
-| <a id="dec-10"></a>DEC-10 | Máximo por objeto, cuota por cuenta, expiración/limpieza de uploads incompletos. | Propiedad, privacidad y validación obligatorias; no cuota inventada. |

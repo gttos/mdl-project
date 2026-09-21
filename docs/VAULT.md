@@ -4,7 +4,7 @@ Las reglas de privacidad, revisión, recovery, dispositivo único, borrados y ba
 
 ## 1. Alcance y propiedad de datos
 
-Distribución funcional: `RP-VLT-001..006` y `RP-FOT-001..006`.
+Distribución funcional: `RP-VLT-001..006`, `RP-VLT-026..031` y `RP-FOT-001..006`. Los inventarios cerrados de cada dominio son las listas autorizadas; este documento no los duplica.
 
 | Capa | Representación |
 |---|---|
@@ -36,15 +36,15 @@ Las garantías funcionales sobre revisión, asociación y secretos se referencia
 
 Secuencia técnica de escritura: intención/entry cifrada local → transacción funcional con binding → metadata remota → subida firmada de ciphertext → verificación remota → confirmación → retiro de revisión anterior. La confirmación visible y el retry se rigen por [Guardado y sincronización](rules/SYNC.md).
 
-La API verifica existencia y longitud; no considera el ETag como hash de integridad. El cliente valida ciphertext y autenticidad criptográfica. Renovar URL conserva el blob y la identidad de la operación.
+La API verifica existencia y longitud; no considera el ETag como hash de integridad. El cliente valida ciphertext y autenticidad criptográfica. Renovar URL conserva el blob y la identidad de la operación. La cuota lógica, su aviso, las señales autorizadas de observabilidad y la caducidad de capacidades se rigen por `RP-VLT-027..031`; su implementación y evidencia siguen pendientes en los planes locales hasta que se comprueben explícitamente.
 
 Recovery pagina inventario, descarga, descifra, agrupa por tipo/ID y selecciona revisión inequívoca antes de publicar el conjunto. Reglas completas: `RP-VLT-011..018`; durante la beta existe un único dispositivo activo por Vault conforme a `RP-VLT-015`.
 
-## 4. Borrado dirigido de experiencia y relación
+## 4. Borrado dirigido de experiencias y períodos
 
 Contrato funcional: `RP-VLT-019..023`; elegibilidad: [Eliminación de experiencias](rules/EXPERIENCES.md#eliminar) y [Corrección de hitos y períodos](rules/RELATIONSHIPS.md#cambios).
 
-El backend resuelve el binding por propietario/tipo/ID bajo la transacción funcional, marca entidad y revisiones y deja la destrucción física al proceso de purga. La intención local se finaliza después de confirmar. Un borrado de crush abarca todo el grafo según `RP-DEL-001..005`.
+El backend resuelve el binding de cada experiencia afectada por propietario/tipo/ID bajo la transacción funcional, marca entidad y revisiones y deja la destrucción física al proceso de purga. Eliminar un período retira los bindings y ciphertext de las experiencias que elimina; el período y sus hitos no tienen contenido Vault propio. La intención local se finaliza después de confirmar. Un borrado de Crush abarca todo el grafo según `RP-DEL-001..005`.
 
 La baja de cuenta usa el resultado estructural específico de [Baja y ciclo de vida](rules/DATA_LIFECYCLE.md); no reutiliza automáticamente la semántica destructiva del borrado manual del crush.
 

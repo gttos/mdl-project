@@ -2,11 +2,11 @@
 
 Fuente canónica compartida de MyDuckingLife.
 
-- [Reglas de producto — índice de documentos por dominio, en revisión](docs/PRODUCT.md)
+- [Reglas de producto — catálogo funcional finalizado](docs/PRODUCT.md)
 - [Arquitectura transversal](docs/ARCHITECTURE.md)
 - [Vault E2EE — detalle del subsistema](docs/VAULT.md)
 - [Timeline — referencias de dominio y reconstrucción](docs/TIMELINE.md)
-- [Estadísticas e IA — referencias del contrato](docs/STATISTICS.md)
+- [Estadísticas — referencias del contrato](docs/STATISTICS.md)
 - [Business blueprint](docs/product/business-blueprint.md) — artefacto mantenido por el usuario; no se modifica por consolidaciones automáticas.
 - [Legal](docs/legal/README.md)
 - [Private Journal Vault — plan activo](docs/plans/active/vault-e2ee/README.md)

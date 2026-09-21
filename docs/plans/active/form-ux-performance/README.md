@@ -1,6 +1,6 @@
 # Fluidez y experiencia de formularios iOS
 
-> **Estado:** implementación en curso. `IOS-FORM-01` a `IOS-FORM-03`, los tres pasos del alta de Crush, los pasos 1-2 y Review de edición de Crush, el alta/edición de Experience, el alta/edición standalone de Relationship y el ajuste visual de Vault están implementados con evidencia local. Una pasada de Simulator confirmó las rutas UI ya cubiertas y añadió foco Email → Password y bloqueo de doble Login. La auditoría de `IOS-FORM-05` confirmó que onboarding es informativo; Perfil usa sólo selectores y fecha; Feedback ya descarta el teclado al arrastrar; y la nota privada es un editor dedicado que toma foco. La baja de cuenta queda sólo para validación física por su flujo durable y sensible. Recovery de Vault ya tiene un seam exclusivo de UI testing que monta la ruta real y cubre contraseña y frase sin iniciar recuperación; su scroll no declara dismiss interactivo y eso permanece como comprobación física. Las validaciones físicas se agrupan para después. En Birthday aislado, si el guard existente exige confirmar edad, el CTA queda pulsable y muestra un mensaje para corregir los datos básicos, sin navegación automática; la lógica de edad queda señalada para revisión posterior. Review está localizado y no duplica WhatsApp; su guardado completo ya se prueba con una entrada Vault real del fixture UI. `EncounterDatePicker` ya precarga la fecha vinculada tanto al abrirse por toque como por encadenamiento lineal; confirmar sin elegir día conserva el día civil. Pasos 3-5 sólo requieren validación física. `IOS-FORM-06` sigue pendiente. Esta iniciativa no está lista para cierre.
+> **Estado:** implementación en curso. La infraestructura de foco, teclado y validación conserva su evidencia, pero los recorridos de experiencia inicial opcional, Relationship standalone y nota de cierre han quedado supersedidos por el contrato funcional vigente. `IOS-CRU-02` hace obligatoria la Experience inicial y `IOS-RR-N2` implementa las entradas «Añadir experiencia» y «Cambiar situación» con sus órdenes propios, retirando el editor duplicado de nota de cierre. `IOS-FORM-06` y las validaciones físicas generales quedan después de esos ajustes para no validar flujos que serán retirados.
 >
 > **Proyecto afectado:** iOS. Product fija las reglas de interacción; no hay cambio de contrato, persistencia ni trabajo API.
 
@@ -16,7 +16,7 @@ La iniciativa corrige costes de renderizado compartidos confirmados por la audit
 - Componentes compartidos que gobiernan esos flujos, en especial `FlowBaseView`, `MDLBaseView`, campos de texto y el pie de acción.
 - Eliminación de trabajo de teclado sin uso, un único scroll vertical por formulario, desplazamiento que puede ocultar el teclado y pie principal visible sobre él.
 - Navegación secuencial de campos, validación al intentar avanzar y salto al primer campo inválido.
-- Etiquetas simples de acción en wizards y comportamiento explícito de la experiencia inicial opcional de un Crush.
+- Etiquetas simples de acción en wizards y validación explícita de la experiencia inicial obligatoria de un Crush.
 - Autofill/tipos de teclado, continuidad del campo de contraseña al mostrar/ocultar y validación física de rendimiento.
 
 ## Fuera de alcance
@@ -37,18 +37,21 @@ La iniciativa corrige costes de renderizado compartidos confirmados por la audit
 | GWT-FORM-04 | Hay un formulario con teclado visible | Se enfoca un campo o se navega a un error | El campo relevante y el botón principal permanecen visibles simultáneamente, respetando safe areas, tamaño de pantalla y Dynamic Type. |
 | GWT-FORM-05 | Un wizard tiene más de un campo editable lógico | La persona pulsa `Siguiente` en el teclado | El foco pasa al siguiente campo en orden visual. En el último campo, la tecla ejecuta la misma acción que el botón principal de la pantalla. |
 | GWT-FORM-06 | Una pantalla de wizard aún no es terminal | Muestra su acción principal | La acción se llama `Siguiente`. En el último paso que persiste datos se llama `Guardar`. Los flujos de una sola acción conservan su verbo propio, por ejemplo iniciar sesión. |
-| GWT-FORM-07 | El último paso de creación de Crush contiene la experiencia inicial opcional | Los tres campos de experiencia están vacíos y se pulsa `Guardar` | Se guarda el Crush sin experiencia inicial, según la regla existente de Product. |
-| GWT-FORM-08 | La experiencia inicial opcional contiene cualquier valor | Se pulsa `Guardar` | Se aplican las reglas existentes de completitud; se marcan todos los campos inválidos y no se persiste una intención parcial. |
+| GWT-FORM-07 | El último paso de creación de Crush contiene la experiencia inicial obligatoria | Falta lugar, descripción o satisfacción y se pulsa `Guardar` | Se marcan todos los campos inválidos y no se crea snapshot, operación, proyección ni request. |
+| GWT-FORM-08 | La experiencia inicial contiene todos sus campos válidos | Se pulsa `Guardar` | Se persiste una única intención compuesta con Crush, período, hito y Experience inicial en `met_at`. |
 | GWT-FORM-09 | Una persona pulsa `Siguiente` o `Guardar` con datos inválidos | La revalidación local falla | El botón permanece disponible para intentar la corrección; se marcan todos los campos inválidos, se desplaza al primero en orden visual y recibe foco de entrada y de accesibilidad cuando el control lo admite. |
 | GWT-FORM-10 | Un campo no editable por teclado es el primer inválido | Falla la validación | La pantalla se desplaza a ese control y anuncia/expone su estado accesible, sin abrir un teclado que no corresponde. |
 | GWT-FORM-11 | Un formulario no se ha intentado enviar o avanzar | La persona comienza a editar | No se introducen errores visuales prematuros. Tras perder foco o tras el primer intento, el estado de validación se actualiza mientras corrige. |
 | GWT-FORM-12 | Se inicia una operación de guardado o envío | La operación sigue en curso | La acción principal se deshabilita sólo durante esa operación para evitar doble envío; antes de ello se mantiene activa para poder validar y guiar. |
+| GWT-FORM-13 | Existe un período vivo | La persona abre «Añadir experiencia» | Completa la Experience en un único paso; «¿Hay un cambio de situación?» añade un segundo paso sólo al activarse. |
+| GWT-FORM-14 | El período más reciente está cerrado | La persona abre «Añadir experiencia» | El flujo tiene dos pasos obligatorios en orden Experience → situación inicial y no muestra una elección opcional sobre el cambio. |
+| GWT-FORM-15 | La persona abre «Cambiar situación» | Recorre el formulario | El flujo tiene dos pasos obligatorios en orden situación/cierre → Experience. |
 
 ## Decisiones cerradas
 
 - Al fallar una validación se marcan todos los campos inválidos y se dirige al primero en orden visual.
 - El pie de acción debe quedar sobre el teclado con mecanismos nativos de layout, no calculando manualmente su altura.
-- Los pasos intermedios usan `Siguiente`; el paso que persiste usa `Guardar`. La experiencia inicial opcional vacía usa simplemente `Guardar`, no un texto más largo.
+- Los pasos intermedios usan `Siguiente`; el paso que persiste usa `Guardar`. «Añadir experiencia» usa Experience → situación cuando el segundo paso se añade o es obligatorio; «Cambiar situación» usa situación → Experience. Los dos conservan su punto de entrada y no comparten un orden visual único.
 - La tecla de retorno del último campo ejecuta la misma acción que el pie de la pantalla.
 - El foco inicial espera al toque, salvo el editor de descripción a pantalla completa.
 - `Siguiente` y `Guardar` se mantienen pulsables hasta que una operación real está en curso.
@@ -69,7 +72,7 @@ La iniciativa corrige costes de renderizado compartidos confirmados por la audit
 2. **IOS-FORM-01 — contenedor y baseline de fluidez:** retirar trabajo de teclado sin uso, garantizar un único scroll vertical por formulario y colocar correctamente el pie sobre el teclado.
 3. **IOS-FORM-02 — contrato de foco y validación:** introducir la infraestructura reutilizable para orden de foco, `Siguiente`/`Guardar`, retorno, salto al primer inválido y foco de accesibilidad.
 4. **IOS-FORM-03 — autenticación:** aplicar el patrón a login, registro y recuperación; estabilizar el toggle de contraseña y los tipos de contenido de iOS.
-5. **IOS-FORM-04 — flujos estructurales:** aplicar el patrón a alta/edición de Crush, Experience y Relationship, incluida la experiencia inicial opcional, sin cambiar sus guards ni snapshots. Los tres pasos del alta y los pasos 1-2 y Review de edición están implementados; Birthday conserva su guard y ahora explica la corrección requerida, Review está localizado sin WhatsApp duplicado con guardado completo probado y `EncounterDatePicker` conserva su fecha vinculada también al abrirse por encadenamiento lineal. Pasos 3-5 no requieren código; sus validaciones físicas se agrupan para después.
+5. **IOS-FORM-04 — flujos estructurales:** la infraestructura lineal existente se preserva. Los guards y snapshots de experiencia inicial obligatoria se sustituyen en `IOS-CRU-02`; los tres recorridos Experience, Experience → Situación y Situación → Experience se implementan en `IOS-RR-N2`. Las validaciones físicas se ejecutan sobre el contrato final, no sobre las pantallas standalone supersedidas.
 6. **IOS-FORM-05 — formularios y editores restantes:** la auditoría confirmó que no queda un correctivo de interacción en onboarding, perfil, Feedback, nota privada ni baja de cuenta; esta última conserva sólo validación física por su flujo durable. Recovery de Vault ya es alcanzable bajo UI testing sin alterar su recuperación. Quedan las validaciones físicas agrupadas.
 7. **IOS-FORM-06 — medición física y gate de pipeline:** medir en dispositivo real Release la apertura de teclado, scroll, guardado y cuerpos SwiftUI. Sólo si hay evidencia de bloqueo en el pipeline durable se propone una fase separada para su threading.
 

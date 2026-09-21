@@ -163,7 +163,7 @@ Las decisiones todavía abiertas se resuelven antes de su fase dependiente; las 
 
 1. **Cambio autenticado de contraseña:** recomendar si esta iniciativa crea ya un endpoint dedicado con prueba de contraseña actual o si se limita a cerrar el canal inseguro del perfil y mantiene el reset OTP como único cambio disponible.
 2. **Sesión posterior al cambio — definida:** aplicar `RP-OTP-007` de [Cuenta](../../../rules/ACCOUNT.md#recuperacion-acceso). Implementación pendiente en `API-SEC-REM-03`.
-3. **Envelope de subida Vault:** fijar máximo por objeto, presupuesto por usuario y mecanismo compatible con el cliente — PUT con longitud/checksum firmados o policy POST con rango— después de medir snapshots válidos y el stack S3-compatible.
+3. **Envelope de subida Vault — definición funcional cerrada:** `RP-VLT-027..031` fijan 65.536 bytes por objeto, 25 MiB lógicos por cuenta, aviso al 80 %, reserva idempotente, observabilidad sin plaintext y caducidad a las 24 horas con liberación de cuota y limpieza automática. La implementación debe escoger y documentar el mecanismo técnico compatible con el cliente —PUT con longitud/checksum firmados o policy POST con rango— sin alterar ese contrato.
 4. **Proxy confiable:** operaciones debe aportar los rangos/orígenes efectivos y confirmar si el origin es inaccesible fuera de Cloudflare. No se inventan CIDR ni se usa `*` como fallback.
 5. **Compatibilidad iOS:** si la decisión 1 o 3 cambia payload, cabeceras o método HTTP, ampliar la iniciativa a iOS y crear su plan local antes de modificar API.
 

@@ -2,7 +2,7 @@
 
 > **Estado:** activa; `AND-01` a `AND-04` aceptadas, y `AND-05`/alcance no bloqueado de `AND-06`/`AND-07`/`AND-08` con implementación aceptada; `AND-09` está en progreso, con su alcance automatizado y tres correcciones accesibles/visuales aceptadas con validaciones pendientes. El slice Add Crush está aceptado con validaciones pendientes: preserva snapshots previos, corrige revisiones Vault y cubre creación durable completa. También quedan la verificación dirigida de Home, acciones inertes del Timeline del perfil, localización residual, recorridos físicos/humanos y validaciones externas
 > **Proyectos:** Product / Android; API e iOS como contratos y evidencia, no como ámbitos de implementación por defecto
-> **Última actualización:** 2026-09-15
+> **Última actualización:** 2026-09-21
 
 ## Objetivo
 
@@ -56,7 +56,7 @@ La aceptación se evalúa en seis dimensiones inseparables:
 
 ### GWT-AND-02 — frontera privada
 
-**Dado** un alta, edición, lectura o borrado con nombre/contacto/redes/cumpleaños, lugar/descripción o nota de cierre,
+**Dado** un alta, edición, lectura o borrado con nombre/contacto/redes/cumpleaños o lugar/descripción,
 
 **cuando** Android procesa la acción,
 
@@ -163,9 +163,9 @@ Esta constatación es una entrada del plan, no una auditoría histórica ni una 
 
 ## Decisiones abiertas
 
-1. **Sign in with Apple en Android:** el plan activo actual lo limita a API/iOS. Antes de la fase de proveedores de autenticación se debe decidir si Android lo expone o conserva sólo email/contraseña durante la beta.
+1. **Sign in with Apple en Android — definido:** conforme a RP-LAN-004 y RP-APL-034, Android conserva sólo email y contraseña durante la beta. Una cuenta Apple accede al mismo `User` y Vault después de establecer su primera contraseña mediante el email verificado; Android no activa otro proveedor ni crea una cuenta paralela.
 2. **Empty states:** `empty-state-standardization` está diferida post-beta también como referencia para Android. `AND-08` sólo debe impedir pantallas completamente vacías, confusión con error/loading o callejones sin salida; no adelanta el componente común ni la auditoría de once superficies prevista para después de la beta.
-3. **Relationship:** las decisiones abiertas y el contrato final pertenecen a `relationship-redesign`; Android no implementa el modelo legacy como solución transitoria.
+3. **Relationship:** Android adoptará después de estabilizar `relationship-redesign` el catálogo final de diez `RelationshipSituation`, incluido `3 FRIENDS` («Solo somos amigos»), sin implementar el modelo legacy como solución transitoria.
 4. **Distribución y Legal:** las obligaciones específicas de Android/Google Play y backups requieren alcance legal explícito; este plan no modifica `docs/legal/`.
 
 ## Próximo resultado permitido

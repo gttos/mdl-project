@@ -1,6 +1,6 @@
 # Reglas de producto — Baja, inactividad y ciclo de vida de los datos
 
-**Estado de revisión: EN REVISIÓN.** Este archivo sólo se marca como finalizado cuando la persona responsable de Producto lo indique expresamente. Ese estado no certifica implementación ni aprobación jurídica.
+**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica; las decisiones expresamente pendientes continúan abiertas y no autorizan a inventar comportamiento.
 
 [Índice de reglas](../PRODUCT.md) · Baja voluntaria o por inactividad, seudonimización, destrucción, conservación y tareas automáticas.
 
@@ -27,7 +27,7 @@
 | Datos | Resultado |
 |---|---|
 | Cuenta e identidad directa | Se retiran `email`, `email_lookup`, `password`, `birth_date`, `gender_id`, `country_id`, métodos de acceso Apple, sesiones, OTP y mecanismos de recuperación. La cuenta deja de poder utilizarse o recuperarse. |
-| Contenido privado del Vault | Se retiran nombre, género, profesión, WhatsApp, Instagram, Facebook, Snapchat, TikTok y cumpleaños de los Crushes; `place` y `description` de las experiencias; `closure_note` de los períodos; todas sus versiones cifradas; y los medios de recuperación del Vault. La destrucción física se ejecuta después del plazo fijado. |
+| Contenido privado del Vault | Se retiran nombre, género, profesión, WhatsApp, Instagram, Facebook, Snapchat, TikTok y cumpleaños de los Crushes; `place` y `description` de las experiencias; todas sus versiones cifradas; y los medios de recuperación del Vault. La destrucción física se ejecuta después del plazo fijado. |
 | Dispositivos y mecanismos de recuperación | Invalidación o eliminación inmediata. |
 | Estado local y fotos | Limpieza después de la confirmación, reanudable si se interrumpe. |
 | Actividad de Home | Eliminación. |
@@ -52,7 +52,9 @@
 - **RP-INA-003.** Antes del cierre se comprueba otra vez si hubo un inicio de sesión durante la gracia. Una tarea automática retrasada no puede cerrar una cuenta que volvió a activarse válidamente.
 - **RP-INA-004.** Aviso/cierre son idempotentes; repetir no duplica mensajes ni extiende arbitrariamente gracia.
 - **RP-INA-005.** Una cuenta provisional no verificada sigue el plazo fijo de siete días desde el alta y no entra en el ciclo de 18 meses de inactividad.
-- **RP-INA-006.** Una cuenta sin fecha de último login y los casos de aviso no entregado, rebotado o bloqueado por Private Relay permanecen fuera del cierre automático hasta resolver DEC-03.
+- **RP-INA-006.** Los 18 meses se cuentan desde `last_login`; si una cuenta verificada nunca lo registró, se cuentan desde `email_verified_at`. Si faltan ambas fechas, la cuenta queda fuera del cierre automático y genera una anomalía investigable sin contenido privado.
+- **RP-INA-007.** El plazo de 20 días comienza cuando el proveedor de email acepta el aviso para entrega. MDL no necesita registrar aperturas, clics ni lectura del mensaje para aplicar la regla.
+- **RP-INA-008.** Un fallo temporal de entrega se reintenta conforme a una política finita. Un fallo general del proveedor o de la configuración no inicia el plazo de gracia. Un rechazo definitivo propio de la dirección —incluidos un rebote permanente o Private Relay desactivado— inicia los 20 días desde el último intento después de agotar los reintentos autorizados; el resultado y la causa técnica se registran sin conservar el contenido del mensaje.
 
 <a id="retirada-y-destruccion"></a>
 ## Retirada del uso normal y destrucción física
@@ -75,6 +77,7 @@ Esta tabla reúne las tareas automáticas de la beta y el resultado que cada eje
 | RP-AUT-007 | Purga notificaciones Apple | Diaria | 30 días, con excepción del último evento de identidad activa. |
 | RP-AUT-008 | Limpieza de registros elegibles | Diaria | OTP/actividad/auditoría/seguridad conforme a retención aprobada. |
 | RP-AUT-009 | Procesamiento programado de tareas pendientes | Cada hora, además del procesamiento continuo | Procesar tareas acumuladas; no significa que toda tarea deba esperar una hora cuando el procesamiento continuo está activo. |
+| RP-AUT-014 | Limpieza de subidas Vault incompletas | Cada hora | Retirar objetos y metadata de capacidades no confirmadas que hayan cumplido 24 horas; la caducidad y la liberación de cuota son efectivas al vencer, sin esperar a la tarea. |
 
 - **RP-AUT-010.** Las tareas de aviso y cierre consultan el estado vigente antes de actuar y no ejecutan una decisión que haya quedado desactualizada.
 - **RP-AUT-011.** Si una destrucción falla, se conserva lo necesario para reintentarlo y no se declara eliminado un contenido cuya copia física todavía existe.
@@ -88,7 +91,7 @@ Esta tabla contiene únicamente plazos funcionales ya fijados. Los plazos todav�
 
 | Conjunto | Plazo/condición | Salvedad |
 |---|---|---|
-| Inactividad | 18 meses + 20 días desde aviso | Canal/evidencia/base del aviso requieren revisión. |
+| Inactividad | 18 meses desde `last_login` o, si falta, `email_verified_at`; después 20 días desde aviso aceptado o último intento ante rechazo definitivo | Base, transparencia y tratamiento jurídico de la falta de entrega requieren aprobación Legal. |
 | Contenido cifrado retirado | 7 días desde su retirada, luego destrucción periódica | Backups y versiones siguen ciclos separados; revisión Legal. |
 | Referencia entre contenido y elemento | Hasta destruir la última versión | No permanece indefinidamente hasta la baja. |
 | Revocación Apple | Hasta éxito o 30 días desde fallo final | Sólo material mínimo cifrado. |
@@ -104,5 +107,4 @@ Estas decisiones siguen abiertas. La documentación técnica y el comportamiento
 | ID | Decisión pendiente | Lo ya fijado |
 |---|---|---|
 | <a id="dec-02"></a>DEC-02 | Finalidad/base/plazo/acceso/separación/salvaguardas de estructura post-baja. | Conservación funcional decidida; seudonimizada y fuera de uso ordinario; sin habilitar uso posterior. |
-| <a id="dec-03"></a>DEC-03 | Inactividad sin login registrado; evidencia de aviso/entrega; fallo/rebote/Relay desactivado. | 18 meses + 20 días; sólo login válido cancela. No aviso inmediato por fecha ausente sin decisión. |
 | <a id="dec-09"></a>DEC-09 | Plazos de ActivityEvent, AuditEvent, AuthEvent, SecurityAlert, aceptaciones, feedback, recibos, logs, backups y proveedores. | La baja elimina el feed personal; ningún conjunto conserva datos indefinidamente por omisión; los siete días del Vault no fijan el plazo de los demás conjuntos. |
