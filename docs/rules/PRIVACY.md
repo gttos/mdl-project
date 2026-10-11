@@ -24,6 +24,8 @@
 - **RP-SEG-008.** Todo objeto privado y toda capacidad temporal quedan vinculados a su cuenta propietaria y respetan los [límites del Vault](VAULT.md#inventario-servidor): 65.536 bytes por objeto y 25 MiB lógicos por cuenta. La capacidad temporal reserva cuota sin duplicarla en los reintentos.
 - **RP-SEG-009.** La IP y el esquema utilizados para seguridad sólo aceptan cabeceras de reenvío cuando proceden de un proxy expresamente confiable.
 - **RP-SEG-010.** Los secretos operativos se entregan por el mecanismo autorizado del entorno y permanecen fuera del código, imágenes, artefactos, logs y resultados de pruebas. El acceso de personal utiliza el mínimo permiso necesario y queda trazado.
+- **RP-SEG-011.** La observabilidad técnica y la analítica de producto son canales distintos. Un diagnóstico utiliza un código estable, severidad, categoría, versión/build, entorno, `traceId` y sólo el contexto técnico permitido por `RP-SEG-007`; nunca reutiliza eventos analíticos ni depende de que la persona mantenga activada la analítica. Cuando un fallo iOS corresponde a una petición API, cliente, respuesta, logs backend y reporte de error conservan el mismo `traceId` correlacionable.
+- **RP-SEG-012.** Un receptor remoto de errores iOS sólo puede activarse tras aprobar `DEC-16`. Su configuración impide por defecto session replay, screenshots, adjuntos, perfiles, trazas de rendimiento, breadcrumbs automáticos de UI/red y captura automática de requests, responses, headers, queries o contexto personal. Sólo recibe fallos y metadata incluidos en una allowlist comprobable; su ausencia o fallo no altera el comportamiento de MDL.
 
 <a id="derechos"></a>
 ## Soporte y ejercicio de derechos
@@ -46,3 +48,4 @@ Estas decisiones siguen abiertas. La documentación técnica y el comportamiento
 | ID | Decisión pendiente | Lo ya fijado |
 |---|---|---|
 | <a id="dec-12"></a>DEC-12 | Obtener criterio jurídico sobre minimización estructural, derechos de terceros, portabilidad y comunicaciones de privacidad. | El expediente Legal ya refleja la ubicación de los datos y formula estas preguntas; falta la decisión de la asesoría. |
+| <a id="dec-16"></a>DEC-16 | Decidir si iOS usa Sentry u otro receptor remoto de errores y aprobar proveedor, región/transferencias, DPA/subencargados, eventos permitidos, sampling, retención, borrado, acceso, alertas, disclosure y ficha App Store Privacy. | El diagnóstico estará separado de la analítica, no tendrá replay ni autocaptura y usará únicamente metadata técnica allowlisted y un `traceId` compartido con API. Hasta resolverlo, los diagnósticos iOS permanecen locales. |

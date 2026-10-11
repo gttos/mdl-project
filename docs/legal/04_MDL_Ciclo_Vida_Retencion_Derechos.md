@@ -48,10 +48,13 @@
 | Activity/Audit/Auth/Security | plazo por aprobar | purga programada o hold autorizado | DEC-09 |
 | Logs y proveedores | configuración real | expirar conforme al proveedor | retención, región, DPA y scrubbing |
 | Backups RDS/S3 | configuración real | expiración y bloqueo de reactivación | inventario, plazo y restore |
-| Feedback y recibo de baja | sólo finalidad aprobada | conservación limitada | campos, acceso y plazo |
+| Feedback general de beta | diagnóstico de producto con `context` y cinco campos técnicos cerrados | purga íntegra dentro de los 30 días posteriores al fin de la beta si no existe una política sustitutiva aprobada | durante la beta sólo accede el responsable del producto mediante consulta directa a RDS; no existe listado HTTP |
+| Feedback y recibo de baja asociados a la baja de cuenta | sólo finalidad aprobada | conservación limitada | campos, acceso y plazo |
 | Estructura post-baja | sólo si Legal autoriza finalidad estadística | separación del uso ordinario | DEC-02 completa |
 
 Un plazo implementado no es automáticamente un plazo jurídico correcto. Si Legal lo modifica, deben cambiar configuración, tareas, pruebas y textos públicos.
+
+El lanzamiento público queda bloqueado hasta sustituir el tratamiento provisional del feedback de beta por una política aprobada e implementada que defina finalidad, campos, roles y mecanismo de acceso, retención y purga, transparencia, ejercicio de derechos y destino de los registros de beta. La solución pública no hereda por defecto el acceso directo a RDS. Si esa política no existe al terminar la beta, los registros de feedback de beta se purgan íntegramente dentro de los 30 días siguientes.
 
 ## 4. Baja por inactividad
 

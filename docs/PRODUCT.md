@@ -13,7 +13,7 @@ Legal mantiene su autoridad sobre privacidad, retención, derechos y cumplimient
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| <a id="3-cuenta-autenticación-y-sesión"></a><a id="32-recuperación-de-la-contraseña-de-acceso"></a><a id="36-sign-in-with-apple"></a>[Cuenta de usuario](rules/ACCOUNT.md) | Alta y acceso, verificación, Apple, perfil de la cuenta de usuario, ajustes y recuperación de acceso. | FINALIZADO |
+| <a id="3-cuenta-autenticación-y-sesión"></a><a id="32-recuperación-de-la-contraseña-de-acceso"></a><a id="36-sign-in-with-apple"></a>[Cuenta de usuario](rules/ACCOUNT.md) | Alta y acceso, verificación, Apple, Google, perfil de la cuenta de usuario, ajustes y recuperación de acceso. | FINALIZADO |
 | <a id="4-alta-y-perfil-de-un-crush"></a><a id="41-datos-obligatorios"></a><a id="42-resultado-de-match"></a><a id="43-edición-del-perfil"></a><a id="44-archivar-y-eliminar"></a>[Crush y perfil del Crush](rules/CRUSH.md) | Alta, datos y edición del perfil del Crush, resultado de match, edad, cumpleaños, zodíaco, valoraciones, fotos, consulta, mapa, archivo y eliminación. | FINALIZADO |
 | <a id="6-experiencias"></a><a id="62-edición"></a><a id="63-borrado"></a>[Experiencias](rules/EXPERIENCES.md) | Experiencia inicial y posteriores: datos, fechas, creación, edición, eliminación y vinculación con relaciones. | FINALIZADO |
 | <a id="7-relaciones"></a><a id="71-cronología"></a><a id="73-situaciones-y-trayectos-permitidos"></a><a id="74-cierre"></a><a id="75-registrar-corregir-y-eliminar"></a>[Relaciones](rules/RELATIONSHIPS.md) | Situaciones, períodos, hitos, evidencia relacional de match, trayectos, cierre y acciones latest-only. | FINALIZADO |
@@ -22,6 +22,7 @@ Legal mantiene su autoridad sobre privacidad, retención, derechos y cumplimient
 | <a id="9-escrituras-durables-y-sincronización-visible"></a>[Guardado y sincronización](rules/SYNC.md) | Qué significa guardar, cambios pendientes, conflictos, reintentos, corrección y descarte. | FINALIZADO |
 | <a id="12-estadísticas"></a><a id="121-estadísticas"></a><a id="123-alcance-entre-cuentas"></a>[Estadísticas](rules/STATISTICS.md) | Dashboard personal de la beta, cálculos, ausencia de datos, métricas excluidas y alcance entre cuentas. | FINALIZADO |
 | [Uso de la aplicación](rules/UX.md) | Tutoriales informativos, formularios, mensajes, errores, accesibilidad, carga, vacíos y desconexión. | FINALIZADO |
+| [Analítica de uso en iOS](rules/ANALYTICS.md) | Medición agregada de pantallas y recorridos iOS, activación, opt-out, minimización, semántica y calidad. | FINALIZADO |
 | <a id="15-baja-seudonimización-e-inactividad"></a><a id="16-procesos-automáticos-y-plazos"></a>[Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md) | Baja voluntaria o por inactividad, seudonimización, destrucción, conservación y tareas automáticas. | FINALIZADO |
 | [Privacidad, seguridad y derechos](rules/PRIVACY.md) | Aislamiento entre cuentas, protección de información, diagnóstico, soporte y ejercicio de derechos. | FINALIZADO |
 
@@ -44,6 +45,7 @@ Legal mantiene su autoridad sobre privacidad, retención, derechos y cumplimient
 - **RP-BASE-006.** La primera versión pública aplica el mismo contrato funcional a todas las cuentas, datos y plataformas habilitadas.
 - **RP-BASE-007.** El alcance funcional de la beta está formado por las funciones definidas como activas en este catálogo. Incorporar otra función exige una decisión de Producto y sus reglas antes de habilitarla.
 - **RP-BASE-008.** Los clientes aplican las mismas reglas y garantías; las excepciones de plataforma requieren decisión explícita. La paridad de Android no se presume a partir de iOS.
+- **RP-BASE-009.** La beta 1.0 parte de un contrato greenfield y no conserva compatibilidad con usuarios, datos, payloads, endpoints, flags, esquemas ni comportamientos de versiones pre-beta. Una rama, campo opcional, fallback, fixture o migración no permanece sólo porque una implementación anterior lo necesitó. Todo código ejecutable debe corresponder al contrato vigente; un estado obligatorio ausente o desconocido falla cerrado conforme a `RP-UX-008`. Una transición técnica sólo puede existir si un plan activo identifica un estado real del lanzamiento, su salida y su eliminación antes de cerrar la iniciativa.
 
 El requisito de edad está en [Cuenta](rules/ACCOUNT.md#requisitos); el aislamiento entre cuentas y la privacidad, en [Privacidad](rules/PRIVACY.md#propiedad).
 
@@ -71,7 +73,7 @@ El requisito de edad está en [Cuenta](rules/ACCOUNT.md#requisitos); el aislamie
 - **RP-ID-003.** Un mismo identificador se reconoce aunque cambie la combinación de mayúsculas y minúsculas con la que se presenta.
 - **RP-ID-004.** Fechas de encuentro, experiencia, hito, nacimiento del Crush y confirmación de edad conservan el día elegido aunque cambie la zona horaria o el reintento ocurra otro día.
 - **RP-ID-005.** Ninguna experiencia ni inicio/cambio relacional puede quedar antes del encuentro del crush.
-- **RP-ID-006.** Los acontecimientos del diario no se registran en el futuro; su fecha máxima es hoy.
+- **RP-ID-006.** Los acontecimientos del diario no se registran en el futuro; su fecha máxima es el día civil local del dispositivo en el momento de cada intento de envío. El cliente declara ese día y su offset UTC vigente como contexto separado de la fecha funcional elegida, y los recalcula en cada reintento. La API exige un offset entre UTC−12 y UTC+14 y comprueba que el día declarado coincida exactamente con el instante UTC de recepción desplazado por ese offset; una declaración ausente, no canónica, fuera de rango o incoherente falla sin sustituirse por el día UTC del servidor. Este contexto no se persiste, no forma parte del perfil, no se incorpora al Vault ni modifica el día funcional elegido conforme a RP-ID-004.
 
 La identidad de las acciones y su confirmación completa se definen en [Guardado y sincronización](rules/SYNC.md#identidad).
 
@@ -82,7 +84,8 @@ Definir una regla no demuestra que esté implementada ni permite distribuir una 
 
 - **RP-LAN-002.** El acceso con Apple no se distribuye públicamente hasta resolver la vinculación con cuentas existentes y comprobar duplicados, revocación, funcionamiento de Private Relay, avisos y textos legales.
 - **RP-LAN-003.** Antes del lanzamiento deben estar comprobados el vencimiento de cuentas provisionales, la destrucción diferida del Vault y la exclusión y eliminación correcta de las fotos locales.
-- **RP-LAN-004.** Android requiere validación propia y compatibilidad del Vault con las demás plataformas. Durante la beta ofrece acceso mediante email y contraseña y no muestra «Continuar con Apple». Una cuenta creada con Apple puede establecer su primera contraseña mediante el email verificado conforme a RP-APL-015 y acceder desde Android a la misma cuenta y al mismo Vault, sin retirar su vínculo Apple.
+- **RP-LAN-004.** La beta activa se distribuye exclusivamente mediante iOS y API. Android no participa de esta beta: su paridad, sus validaciones y su compatibilidad con el Vault corresponden a una distribución futura y no bloquean el despliegue ni el cierre de la beta iOS/API. iOS ofrece email y contraseña y «Continuar con Apple», pero no muestra «Continuar con Google». Cuando Android se habilite en una distribución posterior, deberá superar sus gates propios, ofrecerá email y contraseña y «Continuar con Google», no mostrará «Continuar con Apple» y permitirá acceder a la misma cuenta y al mismo Vault conforme a las reglas de Cuenta.
+- **RP-LAN-005.** «Continuar con Google» queda fuera de la beta activa iOS/API. Antes de una futura distribución Android debe comprobarse en conjunto validación server-side y anti-replay, vinculación explícita sin duplicados, revocación, sesión/Vault, configuración operativa, requisitos de marca y Google Play, disclosure y revisión humana/legal; esos gates no bloquean la beta iOS/API.
 
 <a id="18-decisiones-pendientes"></a>
 <a id="decisiones-pendientes"></a>
@@ -91,8 +94,9 @@ Definir una regla no demuestra que esté implementada ni permite distribuir una 
 | Documento | Decisiones |
 |---|---|
 | [Relaciones](rules/RELATIONSHIPS.md#decisiones-pendientes) | [DEC-13](rules/RELATIONSHIPS.md#dec-13) |
-| [Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md#decisiones-pendientes) | [DEC-02](rules/DATA_LIFECYCLE.md#dec-02), [DEC-09](rules/DATA_LIFECYCLE.md#dec-09) |
-| [Privacidad, seguridad y derechos](rules/PRIVACY.md#decisiones-pendientes) | [DEC-12](rules/PRIVACY.md#dec-12) |
+| [Baja, inactividad y ciclo de vida de los datos](rules/DATA_LIFECYCLE.md#decisiones-pendientes) | [DEC-02](rules/DATA_LIFECYCLE.md#dec-02), [DEC-09](rules/DATA_LIFECYCLE.md#dec-09), [DEC-14](rules/DATA_LIFECYCLE.md#dec-14) |
+| [Privacidad, seguridad y derechos](rules/PRIVACY.md#decisiones-pendientes) | [DEC-12](rules/PRIVACY.md#dec-12), [DEC-16](rules/PRIVACY.md#dec-16) |
+| [Analítica de uso en iOS](rules/ANALYTICS.md#decisiones-pendientes) | [DEC-15](rules/ANALYTICS.md#dec-15) |
 
 <a id="fuentes"></a>
 ## Fuentes de consulta
@@ -101,13 +105,14 @@ Los documentos de [arquitectura](ARCHITECTURE.md), [Timeline](TIMELINE.md), [Vau
 
 | Dominio | Procedencia / detalle |
 |---|---|
-| Cuenta | [Email](plans/active/email-verification/README.md), [Apple](plans/active/sign-in-with-apple/README.md), [seguridad](plans/active/security-remediation/README.md). |
-| Diario | [Timeline](TIMELINE.md), [Relaciones](plans/active/relationship-redesign/README.md), [durabilidad](plans/active/durable-write-feedback/README.md). |
+| Cuenta | [Reglas de Cuenta](rules/ACCOUNT.md), [Apple](plans/active/sign-in-with-apple/README.md), [Google](plans/active/sign-in-with-google/README.md) y [Privacidad y seguridad](rules/PRIVACY.md). |
+| Diario | [Timeline](TIMELINE.md), [Relaciones](rules/RELATIONSHIPS.md), [Experiencias](rules/EXPERIENCES.md) y [guardado y sincronización](rules/SYNC.md). |
 | Vault/borrado | [Vault](VAULT.md) y [plan](plans/active/vault-e2ee/README.md). |
 | Estadísticas | [Statistics](STATISTICS.md), [detalle API](../../api/docs/STATISTICS.md). |
-| UX | [Formularios](plans/active/form-ux-performance/README.md), [vacíos](plans/active/empty-state-standardization/README.md). |
+| UX | [Reglas por pantalla](plans/active/frontend-screen-rules/README.md), [formularios](plans/active/form-ux-performance/README.md), [vacíos](plans/active/empty-state-standardization/README.md). |
+| Analítica iOS | [Reglas](rules/ANALYTICS.md) y [plan activo](plans/active/ios-product-analytics/README.md), bajo los gates de Privacidad, Legal y retención. |
 | Automatismos | [Operación API](../../api/docs/OPERATIONS.md), scheduler `api/routes/console.php` consultado mediante MCP. |
 | Privacidad | [Expediente Legal](legal/README.md) y [ciclo de vida](legal/04_MDL_Ciclo_Vida_Retencion_Derechos.md), bajo autoridad jurídica propia. |
-| Plataformas | [Android](plans/active/android-parity/README.md), [entorno local](plans/active/local-integration-environment/README.md), [arquitectura](ARCHITECTURE.md). |
+| Plataformas | [Android](plans/active/android-parity/README.md), [arquitectura](ARCHITECTURE.md), [operación API](../../api/docs/OPERATIONS.md) y [pruebas iOS](../../ios/docs/TESTING.md). |
 
 La revisión de reglas y el contraste posterior se coordinan mediante [business-rule-integrity](plans/active/business-rule-integrity/README.md). No se mezclan aquí estados «cumple/parcial/incumple», símbolos de código ni resultados de tests.

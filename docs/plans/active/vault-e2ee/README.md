@@ -1,27 +1,27 @@
 # Private Journal Vault (E2EE)
 
-> **Autoridad funcional:** [Vault](../../../rules/VAULT.md), [Baja y ciclo de vida](../../../rules/DATA_LIFECYCLE.md) y [Tareas automáticas y plazos](../../../rules/DATA_LIFECYCLE.md#tareas). Las referencias históricas de ejecución de este plan no establecen requisitos de compatibilidad para el lanzamiento. Baja de cuenta conserva estructura seudonimizada y destruye contenido privado según ese catálogo; no se equipara al borrado manual del Crush.
+> **Autoridad funcional:** [Vault](../../../rules/VAULT.md), [Baja y ciclo de vida](../../../rules/DATA_LIFECYCLE.md), [Tareas automáticas y plazos](../../../rules/DATA_LIFECYCLE.md#tareas) y `RP-BASE-009`. No existe usuario ni dato pre-beta que conservar. Toda referencia inferior a migración, staging o cleanup legacy es deuda documental/técnica inventariada en `GF-005`, `GF-013`, `GF-015` y `GF-016`, no un requisito ejecutable. Baja de cuenta conserva estructura seudonimizada y destruye contenido privado según el catálogo vigente; no se equipara al borrado manual del Crush.
 
-> **Estado:** activo. El baseline de cuentas nuevas, el borrado dirigido de experiencia/relación, `API-14`, `iOS-09.8`, `API-14R`, `iOS-09.8R`, `iOS-09.8S`, `iOS-09.8U`, `iOS-09.8V`, `API-14S` e `iOS-09.8W` están validados. La migración física del único usuario legacy terminó con el Vault validado/activado y el historial se recuperó correctamente en entornos limpios por contraseña y por frase de 24 palabras. `CROSS-02` y los backups coordinados de base de datos y objetos Vault están validados. `API-05.3b` está desplegada y `iOS-09.8T-R` + `CROSS-03` están validadas físicamente con un único dispositivo activo: las respuestas funcionales ya no traen contenido privado y iOS lo resuelve sólo desde Vault. Los cortes `API-15A`, `API-16` y `API-16b` retiraron las columnas privadas legacy de producción; cualquier cleanup restante debe tener autorización destructiva separada.
+> **Estado:** activo. El baseline vigente es cuenta nueva/Vault nuevo, con recovery por contraseña o frase y sin plaintext privado en API. Antes del cierre deben retirarse las superficies de migración/adopción pre-beta todavía presentes, completar borrado/reset/baja y validar interoperabilidad y backups. Cualquier operación destructiva sobre una base no descartable conserva autorización propia, pero no existe obligación de migrar datos históricos.
 > **Proyectos:** Product, API e iOS.
 
 ## Objetivo
 
-El contenido privado de crushes, experiencias y relaciones se cifra en iOS y puede recuperarse en otro dispositivo sin que API/S3 reciban la VMK o el plaintext. Ningún dato legacy se elimina hasta demostrar que el historial completo del usuario antiguo existe en Vault, se recupera desde un dispositivo limpio y la app funciona sin depender de columnas privadas de API.
+El contenido privado de crushes, experiencias y relaciones se cifra en el cliente y puede recuperarse en otro dispositivo sin que API/S3 reciban la VMK o el plaintext. La beta nace directamente con ese contrato; no adopta ni reconstruye formatos pre-beta.
 
 ## Alcance
 
 - Baseline nuevo con bindings opacos, blobs versionados y recovery.
-- Reconstrucción completa del único usuario legacy desde los datos funcionales todavía conservados.
-- Retirada de inputs/outputs privados de API después de validar recovery legacy.
-- Vaciado y posterior eliminación de columnas legacy mediante gates separados y autorización explícita.
+- Retirada completa de rutas, comandos, adopción local, fixtures y documentos de migración pre-beta.
+- Contrato API sin inputs/outputs privados y clientes que resuelven el contenido sólo desde Vault.
+- Schema final sin columnas privadas retiradas; cualquier cambio destructivo sobre una base no descartable requiere autorización explícita.
 - Borrado coordinado de crush, fotos locales y baja/reset integral antes del cierre final.
 
 Fuera de alcance:
 
 - backup remoto de fotos/videos;
-- migrar otros usuarios inexistentes o inventar compatibilidad genérica no requerida;
-- exponer una migración recurrente o una superficie de producto para cuentas nuevas;
+- migrar usuarios inexistentes o inventar compatibilidad pre-beta;
+- exponer una migración o superficie de adopción en el producto;
 - interpretar ciphertext en API;
 - ejecutar cleanup, `DROP`, reset, deploy o migración real desde una sesión de documentación/implementación sin autorización operativa específica.
 
@@ -43,7 +43,7 @@ Fuera de alcance:
 | Recovery del historial legacy | Validado | Contraseña y frase de 24 palabras reconstruyen el historial migrado en entornos limpios. |
 | Outputs/inputs privados de API | Validados físicamente | `API-05.3b` retiró los campos privados del contrato; `API-15A`, `API-16` y `API-16b` retiraron también sus columnas legacy en producción. Los bindings de API-13 permanecen. |
 | Compatibilidad iOS con el corte privado (`CROSS-03`) | Validada físicamente | Listado, Home, perfil y Timeline toleran su ausencia en HTTP y resuelven nombre/lugar/descripción/nota sólo desde el Vault local válido. |
-| Actividad reciente de Home | Implementada; validación física pendiente | API registra las altas confirmadas de Crush, Experience y una Relationship posterior, conserva sólo referencias estructurales y no duplica la relación inicial. Editar una Relationship existente —aunque cambie `state_id`— no genera actividad, conforme a [Actividad de Home](../../../rules/TIMELINE.md#home). La cobertura automatizada de `API-PENDING-05` está completa; queda comprobar el feed físicamente tras despliegue. |
+| Actividad reciente de Home | Implementada y validada sobre el contrato final | API registra las altas confirmadas de Crush, Experience y una Relationship posterior, conserva sólo referencias estructurales y no duplica la relación inicial. Editar una Relationship existente no genera actividad, conforme a [Actividad de Home](../../../rules/TIMELINE.md#home). |
 | Columnas privadas legacy de API | Validadas físicamente | `secure_description` y las 13 columnas restantes de contenido privado ya no existen en producción; sus datos residen exclusivamente en Vault. La recuperación de datos previos sólo es posible desde los snapshots. |
 | Superficie Debug de migración legacy | Implementada; pendiente de integración remota | `iOS-09.8T-R` retira el botón Debug y los componentes exclusivos de la operación única. |
 | Alta normal independiente de migración legacy | Implementada; pendiente de validación física | `VaultAccountSetupCoordinator` sustituyó el pipeline legacy: inicializa/activa/sincroniza por contratos normales y no llama a rutas de migración única. |
@@ -52,7 +52,7 @@ Fuera de alcance:
 | Borrado de crush/fotos (`API-17` + `iOS-09.9`) | Implementado; validación coordinada pendiente | API resuelve el grafo y blobs bajo transacción; iOS limpia entries, notas y `LocalMedia/{crushId}` sólo tras confirmación durable. Faltan despliegue/recorrido físico coordinado y una prueba de concurrencia representativa donde corresponda. |
 | Baja/reset integral (`API-11` + `iOS-12`) | Implementado; validación física pendiente | API confirma la baja y expone la confirmación durable ante respuesta perdida; iOS elimina Vault/Keychain/fotos locales sólo después de confirmación. Falta repetir el recorrido físico completo, incluida una cuenta con Vault activo y el relanzamiento tras una respuesta ambigua. |
 | Exclusión de fotos locales de backups (`iOS-13`) | Implementada; validación manual pendiente | `LocalMedia/`, sus subcarpetas por Crush y cada foto se marcan para excluirse del backup del sistema. Antes de lanzamiento hay que comprobar un backup real de dispositivo. |
-| Límites y cuota remota (`RP-VLT-027..031`) | Contrato definido; implementación pendiente | API e iOS deben aplicar 65.536 bytes por objeto, 25 MiB lógicos por cuenta, aviso al 80 %, reserva idempotente, observabilidad sin plaintext y caducidad a las 24 horas. La API debe liberar la cuota al vencer y limpiar objetos y metadata incompletos; iOS conserva la intención durable y solicita una capacidad nueva al reintentar. |
+| Límites y cuota remota (`RP-VLT-027..031`) | Implementación aceptada con validación operativa pendiente | API e iOS usan una policy POST con rango/checksum, verificación acotada de tamaño/hash y cleanup inmediato del mismatch. Tests, MinIO y retry durable local están validados; la comprobación contra AWS S3 continúa en [`security-hardening`](../security-hardening/README.md). |
 
 ## Reglas compartidas y estado
 

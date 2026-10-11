@@ -36,7 +36,8 @@ Ciphertext, identificadores opacos y estructura vinculada a una cuenta siguen si
 | sesiones y tokens | autenticación | siete días desde emisión o revocación anterior |
 | OTP, intentos y bloqueo | verificación y recuperación | OTP de 15 minutos; cinco intentos y bloqueo de 15 minutos; pruning programado |
 | aceptaciones | versión y fecha de términos/privacidad | plazo probatorio pendiente de Legal |
-| feedback y recibo de baja | ejecutar, confirmar y analizar la baja dentro de finalidades aprobadas | campos, acceso y plazo pendientes de Legal |
+| feedback de beta | hasta 100 registros por cuenta con `id`, `user_id`, `context`, timestamps y metadata técnica cerrada: `platform`, `app_version`, `build_number`, `os_version` y `screen`; no admite claves adicionales, contenido libre, identificadores de entidades o dispositivos, email, tokens, requests, cabeceras ni trazas | sólo durante la beta; al llegar a 100 se rechazan nuevos envíos sin borrar los anteriores; acceso exclusivo del responsable del producto mediante consulta directa a RDS, sin endpoint de listado; purga íntegra dentro de los 30 días posteriores al fin de la beta si antes no se aprueba una política sustitutiva |
+| feedback y recibo de baja asociados a la baja de cuenta | ejecutar, confirmar y analizar la baja dentro de finalidades aprobadas | campos, acceso y plazo pendientes de Legal |
 
 Nombre, edad calculada y teléfono no forman parte del perfil de cuenta. El idioma es una preferencia local del cliente.
 
@@ -217,7 +218,7 @@ Producto pretende conservar fuera del uso ordinario estructura seudonimizada de 
 - necesidad de EIPD;
 - minimización de edad, país, rasgos, ratings, situaciones, match, cierres y correlaciones;
 - tratamiento post-baja y riesgo de reidentificación;
-- retención exacta de eventos, logs, aceptaciones, feedback, recibos, backups y proveedores;
+- retención exacta de eventos, logs, aceptaciones, recibos de baja, backups y proveedores; el feedback general conserva únicamente la regla provisional de beta y requiere una política sustitutiva antes del lanzamiento público;
 - acceso, rectificación, oposición, restricción, portabilidad y supresión cuando backend no descifra Vault;
 - proveedores, regiones, transferencias, DPA y subencargados reales;
 - transparencia sobre email cifrado, Vault, fotos locales, inactividad, Apple sólo en iOS y Android con email/contraseña.

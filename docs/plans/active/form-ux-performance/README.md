@@ -1,6 +1,6 @@
 # Fluidez y experiencia de formularios iOS
 
-> **Estado:** implementación en curso. La infraestructura de foco, teclado y validación conserva su evidencia, pero los recorridos de experiencia inicial opcional, Relationship standalone y nota de cierre han quedado supersedidos por el contrato funcional vigente. `IOS-CRU-02` hace obligatoria la Experience inicial y `IOS-RR-N2` implementa las entradas «Añadir experiencia» y «Cambiar situación» con sus órdenes propios, retirando el editor duplicado de nota de cierre. `IOS-FORM-06` y las validaciones físicas generales quedan después de esos ajustes para no validar flujos que serán retirados.
+> **Estado:** implementación en curso. `IOS-FORM-05` queda como implementación aceptada con validaciones pendientes: el paso Legal mantiene la acción principal disponible hasta una operación real, marca los consentimientos pendientes sin enviar, conserva las versiones aceptadas y no añade mensajes visibles nuevos. La evidencia automatizada reportada incluye 2.215 pruebas unitarias y 22 UI tests de autenticación en verde. Los recorridos UI de Crush/Experience bloqueados por el arnés, el recorrido UI de Apple y las comprobaciones físicas de teclado se agrupan en `IOS-FORM-06`; lectores de pantalla y texto ampliado quedan fuera por `RP-UX-006`.
 >
 > **Proyecto afectado:** iOS. Product fija las reglas de interacción; no hay cambio de contrato, persistencia ni trabajo API.
 
@@ -34,7 +34,7 @@ La iniciativa corrige costes de renderizado compartidos confirmados por la audit
 | GWT-FORM-01 | Una pantalla de formulario normal se presenta | Aún no se tocó ningún campo | No se abre el teclado ni se toma foco automáticamente. |
 | GWT-FORM-02 | Se abre un editor dedicado de descripción a pantalla completa | El editor queda visible | El área de texto recibe foco y el teclado se abre para permitir escribir de inmediato. |
 | GWT-FORM-03 | Una persona edita un formulario | Toca una zona vacía o arrastra el contenido | El toque vacío puede ocultar el teclado y el scroll lo descarta de forma interactiva sin bloquear controles reales. |
-| GWT-FORM-04 | Hay un formulario con teclado visible | Se enfoca un campo o se navega a un error | El campo relevante y el botón principal permanecen visibles simultáneamente, respetando safe areas, tamaño de pantalla y Dynamic Type. |
+| GWT-FORM-04 | Hay un formulario con teclado visible | Se enfoca un campo o se navega a un error | El campo relevante y el botón principal permanecen visibles simultáneamente, respetando safe areas y los tamaños de pantalla soportados con texto normal. |
 | GWT-FORM-05 | Un wizard tiene más de un campo editable lógico | La persona pulsa `Siguiente` en el teclado | El foco pasa al siguiente campo en orden visual. En el último campo, la tecla ejecuta la misma acción que el botón principal de la pantalla. |
 | GWT-FORM-06 | Una pantalla de wizard aún no es terminal | Muestra su acción principal | La acción se llama `Siguiente`. En el último paso que persiste datos se llama `Guardar`. Los flujos de una sola acción conservan su verbo propio, por ejemplo iniciar sesión. |
 | GWT-FORM-07 | El último paso de creación de Crush contiene la experiencia inicial obligatoria | Falta lugar, descripción o satisfacción y se pulsa `Guardar` | Se marcan todos los campos inválidos y no se crea snapshot, operación, proyección ni request. |
@@ -45,13 +45,15 @@ La iniciativa corrige costes de renderizado compartidos confirmados por la audit
 | GWT-FORM-12 | Se inicia una operación de guardado o envío | La operación sigue en curso | La acción principal se deshabilita sólo durante esa operación para evitar doble envío; antes de ello se mantiene activa para poder validar y guiar. |
 | GWT-FORM-13 | Existe un período vivo | La persona abre «Añadir experiencia» | Completa la Experience en un único paso; «¿Hay un cambio de situación?» añade un segundo paso sólo al activarse. |
 | GWT-FORM-14 | El período más reciente está cerrado | La persona abre «Añadir experiencia» | El flujo tiene dos pasos obligatorios en orden Experience → situación inicial y no muestra una elección opcional sobre el cambio. |
-| GWT-FORM-15 | La persona abre «Cambiar situación» | Recorre el formulario | El flujo tiene dos pasos obligatorios en orden situación/cierre → Experience. |
+| GWT-FORM-15 | La persona activa «¿Hay un cambio de situación?» dentro de «Añadir experiencia» | Recorre el formulario | Completa primero la Experience y después la situación o cierre; no existe una entrada con el orden inverso. |
+| GWT-FORM-16 | «Añadir experiencia» conoce el período, sus hitos y Experiences confirmados | Presenta el selector de fecha | Aplica el mínimo del recorrido de RP-EXP-011 y hoy como máximo; si el recorrido o destino estrecha el intervalo, no sustituye silenciosamente la fecha ya elegida. |
+| GWT-FORM-17 | El mínimo cronológico calculado queda después de hoy | Se abre o actualiza el selector | No ofrece una fecha ficticia ni permite guardar; explica que todavía no existe un día válido. |
 
 ## Decisiones cerradas
 
 - Al fallar una validación se marcan todos los campos inválidos y se dirige al primero en orden visual.
 - El pie de acción debe quedar sobre el teclado con mecanismos nativos de layout, no calculando manualmente su altura.
-- Los pasos intermedios usan `Siguiente`; el paso que persiste usa `Guardar`. «Añadir experiencia» usa Experience → situación cuando el segundo paso se añade o es obligatorio; «Cambiar situación» usa situación → Experience. Los dos conservan su punto de entrada y no comparten un orden visual único.
+- Los pasos intermedios usan `Siguiente`; el paso que persiste usa `Guardar`. «Añadir experiencia» usa siempre Experience → situación cuando el segundo paso se añade o es obligatorio. No existe otro punto de entrada ni un orden visual inverso.
 - La tecla de retorno del último campo ejecuta la misma acción que el pie de la pantalla.
 - El foco inicial espera al toque, salvo el editor de descripción a pantalla completa.
 - `Siguiente` y `Guardar` se mantienen pulsables hasta que una operación real está en curso.
@@ -59,12 +61,13 @@ La iniciativa corrige costes de renderizado compartidos confirmados por la audit
 - No se añaden por ahora textos visibles nuevos de error bajo los campos.
 - En la entrada aislada de Birthday, cuando el guard existente requiere confirmar edad, el CTA permanece pulsable y muestra un mensaje que indica corregir los datos básicos; no navega automáticamente ni altera la regla de edad. La necesidad de ese guard se revisará fuera de este correctivo de UI.
 - Un selector de fecha abierto programáticamente debe inicializar la selección temporal igual que al abrirse por toque: confirmar sin cambiar el día conserva la fecha civil ya vinculada, nunca la sustituye por hoy.
+- Los selectores aplican los límites cronológicos continuos ya confirmados por el dominio. Un cambio de opción puede invalidar el día actual, pero nunca corregirlo silenciosamente.
 
 ## Interacción con iniciativas activas
 
-- [`Cambios pendientes visibles`](../durable-write-feedback/README.md) conserva la validación autoritativa antes de persistir y el orden durable. Esta iniciativa sólo mejora cómo la UI llega a esa frontera y muestra sus errores.
+- [Guardado y sincronización](../../../rules/SYNC.md) conserva la validación autoritativa antes de persistir y el orden durable. Esta iniciativa sólo mejora cómo la UI llega a esa frontera y muestra sus errores.
 - [`Private Journal Vault`](../vault-e2ee/README.md) conserva sus garantías de Vault y recovery. `VaultRecoveryView` es una referencia técnica para foco/scroll; no se modifica su semántica de recuperación sin una fase explícita.
-- [`Verificación de email`](../email-verification/README.md) y [`Sign in with Apple`](../sign-in-with-apple/README.md) deben adoptar el patrón común cuando implementen o modifiquen formularios propios, sin adelantar sus reglas de identidad, OTP o Legal.
+- [Verificación de email](../../../rules/ACCOUNT.md#verificacion-email) y [`Sign in with Apple`](../sign-in-with-apple/README.md) deben adoptar el patrón común cuando implementen o modifiquen formularios propios, sin adelantar sus reglas de identidad, OTP o Legal.
 
 ## Orden y fases
 
@@ -72,9 +75,9 @@ La iniciativa corrige costes de renderizado compartidos confirmados por la audit
 2. **IOS-FORM-01 — contenedor y baseline de fluidez:** retirar trabajo de teclado sin uso, garantizar un único scroll vertical por formulario y colocar correctamente el pie sobre el teclado.
 3. **IOS-FORM-02 — contrato de foco y validación:** introducir la infraestructura reutilizable para orden de foco, `Siguiente`/`Guardar`, retorno, salto al primer inválido y foco de accesibilidad.
 4. **IOS-FORM-03 — autenticación:** aplicar el patrón a login, registro y recuperación; estabilizar el toggle de contraseña y los tipos de contenido de iOS.
-5. **IOS-FORM-04 — flujos estructurales:** la infraestructura lineal existente se preserva. Los guards y snapshots de experiencia inicial obligatoria se sustituyen en `IOS-CRU-02`; los tres recorridos Experience, Experience → Situación y Situación → Experience se implementan en `IOS-RR-N2`. Las validaciones físicas se ejecutan sobre el contrato final, no sobre las pantallas standalone supersedidas.
-6. **IOS-FORM-05 — formularios y editores restantes:** la auditoría confirmó que no queda un correctivo de interacción en onboarding, perfil, Feedback, nota privada ni baja de cuenta; esta última conserva sólo validación física por su flujo durable. Recovery de Vault ya es alcanzable bajo UI testing sin alterar su recuperación. Quedan las validaciones físicas agrupadas.
-7. **IOS-FORM-06 — medición física y gate de pipeline:** medir en dispositivo real Release la apertura de teclado, scroll, guardado y cuerpos SwiftUI. Sólo si hay evidencia de bloqueo en el pipeline durable se propone una fase separada para su threading.
+5. **IOS-FORM-04 — flujos estructurales:** la infraestructura lineal existente se preserva. Los guards y snapshots de Experience inicial obligatoria y el recorrido único Experience → Situación —opcional u obligatorio según el período— ya están integrados en el contrato final. Las futuras validaciones físicas de formulario se ejecutan sobre ese recorrido, no sobre las pantallas standalone retiradas.
+6. **IOS-FORM-05 — formularios y editores restantes:** implementación aceptada con validaciones pendientes. El CTA de consentimientos cumple `RP-FOR-006`, el intento inválido mantiene el flujo en Legal y expone el estado sin mensajes visibles nuevos, y la regresión automatizada está verde. No queda otro correctivo de código identificado en esta fase.
+7. **IOS-FORM-06 — validación física, medición y gate de pipeline:** recuperar los recorridos UI de Crush/Experience bloqueados por el arnés; comprobar el recorrido Apple y, en dispositivo real Release, teclado, apertura, scroll, guardado y cuerpos SwiftUI con texto normal. No incluye lectores de pantalla ni texto ampliado conforme a `RP-UX-006`. Sólo si hay evidencia de bloqueo en el pipeline durable se propone una fase separada para su threading.
 
 Cada fase iOS se ejecuta en una sesión independiente. No se avanza por iniciativa propia a la siguiente.
 
@@ -83,7 +86,7 @@ Cada fase iOS se ejecuta en una sesión independiente. No se avanza por iniciati
 - Los formularios de producción no recrean observadores de teclado sin usarlos y los formularios de flujo no contienen dos `ScrollView` verticales por accidente.
 - Los flujos multi-campo permiten avanzar con el teclado y el último retorno tiene exactamente el mismo resultado que el botón principal.
 - Una validación fallida marca todos los campos afectados, muestra el primero y nunca permite crear una operación/request a partir de datos inválidos.
-- El botón principal y el campo relevante se mantienen visibles con teclado en pantallas pequeñas y con Dynamic Type grande.
+- El botón principal y el campo relevante se mantienen visibles con teclado en las pantallas soportadas y con texto normal.
 - Password toggle conserva foco/cursor/teclado; email, contraseña, nombre y OTP usan los tipos de contenido apropiados cuando el campo corresponde.
 - Tests unitarios, UI y validación física cubren las reglas anteriores sin debilitar la cobertura durable existente.
 - La medición compara Debug/Release y con/sin debugger en dispositivo físico; los cambios de threading no se realizan por suposición.
@@ -91,10 +94,10 @@ Cada fase iOS se ejecuta en una sesión independiente. No se avanza por iniciati
 ## Riesgos y bloqueos
 
 - Cambiar el orden de foco debe respetar controles opcionales, selectores y campos segmentados; el orden visual y el de validación deben ser una única fuente de verdad por formulario.
-- El cambio del pie inferior debe verificarse en presentaciones push, sheets y full-screen covers, teclado externo, iPhone pequeño y Dynamic Type de accesibilidad.
+- El cambio del pie inferior debe verificarse en presentaciones push, sheets y full-screen covers, teclado externo e iPhone pequeño con texto normal.
 - La corrección de contraseñas requiere regresión manual en login, registro y recuperación para preservar cursor, AutoFill y seguridad.
 - La auditoría detectó trabajo síncrono potencialmente costoso en el pipeline durable. No se toca hasta medirlo y preservar explícitamente cifrar → persistir → proyectar.
 
 ## Estado de cierre
 
-La iniciativa está parcialmente implementada. Antes del cierre queda auditar el inventario de perfil/ajustes/editores para identificar trabajo real, completar lo que resulte pendiente, ejecutar `IOS-FORM-06` y agrupar las validaciones físicas ya registradas. Al cerrarla, las reglas estables se integrarán en [`PRODUCT.md`](../../../PRODUCT.md) y el snapshot técnico en [`ios/docs/ARCHITECTURE.md`](../../../../../ios/docs/ARCHITECTURE.md); entonces se eliminarán ambos planes de esta iniciativa.
+La implementación de formularios está aceptada. Antes del cierre queda ejecutar `IOS-FORM-06`: recuperar los recorridos UI bloqueados, completar las validaciones físicas y medir el pipeline en dispositivo real Release. Al cerrarla, las reglas estables se integrarán en [`PRODUCT.md`](../../../PRODUCT.md) y el snapshot técnico en [`ios/docs/ARCHITECTURE.md`](../../../../../ios/docs/ARCHITECTURE.md); entonces se eliminarán ambos planes de esta iniciativa.

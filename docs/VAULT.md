@@ -28,17 +28,17 @@ El email de cuenta se cifra en el servidor fuera del Vault y la API puede recupe
 | Codificación del token | Base64URL sin padding, 43 caracteres. |
 | Binding | Único por identidad funcional y token dentro del Vault; mismo propietario. |
 | Recuperación por contraseña | Argon2id con perfil interoperable compartido. |
-| Recuperación por frase | Encapsulación independiente PBKDF2-SHA512, frase de 24 palabras. |
+| Recuperación por frase | Encapsulación independiente definida en `RP-VLT-033`: BIP-39 inglesa de 24 palabras, perfil cerrado de 2.048 iteraciones y sin salt aleatorio adicional. |
 
-Las garantías funcionales sobre revisión, asociación y secretos se referencian por `RP-VLT-004`, `RP-VLT-007..010` y `RP-SEG-006`. Los parámetros exactos interoperables y vectores de prueba viven en los documentos locales.
+Las garantías funcionales sobre revisión, asociación y secretos se referencian por `RP-VLT-004`, `RP-VLT-007..010`, `RP-VLT-033` y `RP-SEG-006`. Salvo el perfil mnemónico cerrado por Product, los parámetros exactos interoperables y vectores de prueba viven en los documentos locales.
 
 ## 3. Alta, sincronización y recovery
 
-Secuencia técnica de escritura: intención/entry cifrada local → transacción funcional con binding → metadata remota → subida firmada de ciphertext → verificación remota → confirmación → retiro de revisión anterior. La confirmación visible y el retry se rigen por [Guardado y sincronización](rules/SYNC.md).
+Secuencia técnica de escritura: intención/entry cifrada local → transacción funcional con binding → metadata remota → POST firmado de ciphertext → verificación remota → confirmación → retiro de revisión anterior. La confirmación visible y el retry se rigen por [Guardado y sincronización](rules/SYNC.md).
 
-La API verifica existencia y longitud; no considera el ETag como hash de integridad. El cliente valida ciphertext y autenticidad criptográfica. Renovar URL conserva el blob y la identidad de la operación. La cuota lógica, su aviso, las señales autorizadas de observabilidad y la caducidad de capacidades se rigen por `RP-VLT-027..031`; su implementación y evidencia siguen pendientes en los planes locales hasta que se comprueben explícitamente.
+La capacidad POST liga una key exacta, `application/octet-stream`, checksum SHA-256 y rango `0..65.536`; no existe fallback PUT. La API vuelve a comprobar longitud y SHA-256 mediante una lectura acotada antes de confirmar, sin usar ETag ni interpretar plaintext. Un mismatch retira el objeto y la metadata pendiente y libera la reserva; un fallo de storage conserva un estado recuperable. Renovar conserva el blob, el snapshot y la identidad de la operación, y un rechazo genérico de firma/policy no se trata como expiración. La cuota lógica, su aviso, las señales autorizadas de observabilidad y la caducidad de capacidades se rigen por `RP-VLT-027..031`. La implementación coordinada API+iOS está aceptada con MinIO y recorrido durable local; queda pendiente la comprobación operativa contra AWS S3.
 
-Recovery pagina inventario, descarga, descifra, agrupa por tipo/ID y selecciona revisión inequívoca antes de publicar el conjunto. Reglas completas: `RP-VLT-011..018`; durante la beta existe un único dispositivo activo por Vault conforme a `RP-VLT-015`.
+Recovery pagina inventario, descarga, descifra, agrupa por tipo/ID y selecciona revisión inequívoca antes de publicar el conjunto. Reglas completas: `RP-VLT-011..018` y `RP-VLT-032`; durante la beta existe un único dispositivo activo por Vault conforme a `RP-VLT-015`, y los únicos mecanismos de recuperación son la contraseña del Vault y la frase de 24 palabras. No se distribuyen transferencia QR, permisos de cámara asociados ni el recurso servidor `recovery-key`.
 
 ## 4. Borrado dirigido de experiencias y períodos
 

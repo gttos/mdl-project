@@ -10,7 +10,7 @@ Fuente canónica compartida de MyDuckingLife.
 - [Business blueprint](docs/product/business-blueprint.md) — artefacto mantenido por el usuario; no se modifica por consolidaciones automáticas.
 - [Legal](docs/legal/README.md)
 - [Private Journal Vault — plan activo](docs/plans/active/vault-e2ee/README.md)
-- [Cambios pendientes visibles — plan activo](docs/plans/active/durable-write-feedback/README.md)
+- [Guardado y sincronización — reglas estables](docs/rules/SYNC.md)
 - [Verificación de email — plan activo](docs/plans/active/email-verification/README.md)
 - [Sign in with Apple — plan activo](docs/plans/active/sign-in-with-apple/README.md)
 - [Información de la cuenta de usuario — plan activo](docs/plans/active/user-information/README.md)

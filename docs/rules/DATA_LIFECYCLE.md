@@ -8,7 +8,7 @@
 ## Baja voluntaria de la cuenta
 
 - **RP-BAJ-001.** La baja exige una sesión válida, elegir un motivo disponible o la opción general permitida y confirmar expresamente la decisión. Sólo se comunica éxito después de confirmar el resultado.
-- **BR-3.09.** La baja es irreversible: retira la identidad y el acceso, destruye el contenido privado según sus plazos y conserva únicamente la estructura seudonimizada descrita en [Qué desaparece y qué se conserva](#destino-datos), condicionada a aprobación Legal.
+- **BR-3.09.** La baja es irreversible: retira la identidad y el acceso, destruye el contenido privado según sus plazos y conserva únicamente la estructura descrita en [Qué desaparece y qué se conserva](#destino-datos). Producto la conserva para futuras estadísticas agregadas entre cuentas; su clasificación jurídica, condiciones de conservación y habilitación efectiva quedan condicionadas a aprobación Legal.
 - **RP-BAJ-002.** La baja produce el mismo resultado exista o no exista un Vault. No puede destruir la estructura en un caso y conservarla en otro.
 - **RP-BAJ-003.** La baja se completa como una única acción. Un fallo no puede dejar la cuenta parcialmente cerrada ni una parte del contenido todavía accesible por accidente.
 - **RP-BAJ-004.** La baja revoca todas las sesiones, retira los identificadores directos e invalida inmediatamente los dispositivos, claves y mecanismos de recuperación del Vault.
@@ -33,14 +33,14 @@
 | Actividad de Home | Eliminación. |
 | Estructura de Crushes | Se conservan seudonimizados los campos estructurales definidos en [RP-CRU-013](CRUSH.md#inventario): catálogos, edad confirmada y su fecha, encuentro, valoraciones y estados de ciclo de vida necesarios. La vinculación directa con la cuenta se sustituye por una referencia seudónima fuera del uso ordinario. |
 | Estructura de experiencias | Se conservan seudonimizados `date`, `satisfaction_id` y los vínculos estructurales definidos en [RP-EXP-025](EXPERIENCES.md#inventario). |
-| Estructura relacional | Se conservan seudonimizados períodos, hitos, fases, etiquetas, motivos, fechas y asociaciones definidos en [RP-REL-008](RELATIONSHIPS.md#inventario). |
+| Estructura relacional | Se conservan seudonimizados períodos, hitos, situaciones, motivos, fechas y asociaciones definidos en [RP-REL-008..010](RELATIONSHIPS.md#inventario). |
 | Feedback, recibo y evidencia de seguridad | Sólo finalidad/datos/acceso/plazo aprobados; no ilimitados por omisión. |
 | Token de revocación Apple | Excepción limitada RP-BAJ-016. |
 | Backups/proveedores | Ciclo separado conocido; purgar blobs no acredita purgar todas las copias. |
 
-- **RP-BAJ-013.** La estructura que deba preservarse para agregados no se elimina como un Crush individual, pero tampoco permanece consultable en el diario ni en otras superficies personales.
+- **RP-BAJ-013.** La estructura preservada no se elimina como un Crush individual y queda fuera del diario y de cualquier consulta individual. Su finalidad funcional es permitir en el futuro estadísticas agregadas entre cuentas sobre combinaciones y resultados relacionales —por ejemplo, porcentajes de formalización entre signos—, nunca reconstruir ni presentar la historia de una persona eliminada.
 - **RP-BAJ-014.** Esa estructura se denomina **seudonimizada**, no anónima, hasta contar con una evaluación jurídica suficiente. Sus identificadores, fechas y combinaciones poco frecuentes podrían permitir reidentificación.
-- **RP-BAJ-015.** Finalidad, base, plazo, accesos, separación y salvaguardas requieren Legal antes de habilitar tratamiento posterior; la decisión funcional no autoriza filas individuales ni estadísticas globales.
+- **RP-BAJ-015.** Legal determina si la estructura conservada debe calificarse como anónima o seudonimizada y aprueba base, plazo, accesos, separación y salvaguardas antes del despliegue de la conservación y antes de habilitar estadísticas agregadas entre cuentas. La decisión funcional nunca autoriza consulta de filas individuales, reidentificación ni uso ordinario del diario eliminado.
 - **RP-BAJ-016.** La baja de una cuenta vinculada a Apple retira el vínculo y solicita su revocación. Un fallo de Apple no restaura la cuenta MDL: se realizan hasta cinco intentos inmediatos y, después del fallo final, sólo se conserva cifrado el material mínimo necesario durante un máximo de 30 días para un reintento manual autorizado. Al vencer ese plazo, se elimina.
 
 <a id="inactividad"></a>
@@ -55,6 +55,7 @@
 - **RP-INA-006.** Los 18 meses se cuentan desde `last_login`; si una cuenta verificada nunca lo registró, se cuentan desde `email_verified_at`. Si faltan ambas fechas, la cuenta queda fuera del cierre automático y genera una anomalía investigable sin contenido privado.
 - **RP-INA-007.** El plazo de 20 días comienza cuando el proveedor de email acepta el aviso para entrega. MDL no necesita registrar aperturas, clics ni lectura del mensaje para aplicar la regla.
 - **RP-INA-008.** Un fallo temporal de entrega se reintenta conforme a una política finita. Un fallo general del proveedor o de la configuración no inicia el plazo de gracia. Un rechazo definitivo propio de la dirección —incluidos un rebote permanente o Private Relay desactivado— inicia los 20 días desde el último intento después de agotar los reintentos autorizados; el resultado y la causa técnica se registran sin conservar el contenido del mensaje.
+- **RP-INA-009.** El aviso de inactividad identifica a MDL, informa en español e inglés de los 18 meses sin login correcto y del cierre dentro de 20 días, y explica que sólo un login correcto en la app antes del vencimiento cancela la baja. El mensaje no incluye contenido de la cuenta, identificadores técnicos, tokens, enlaces de cancelación ni mecanismos de seguimiento. Su suficiencia jurídica y la entrega real con el proveedor se aprueban y verifican antes de operar el ciclo en el entorno de beta.
 
 <a id="retirada-y-destruccion"></a>
 ## Retirada del uso normal y destrucción física
@@ -106,5 +107,8 @@ Estas decisiones siguen abiertas. La documentación técnica y el comportamiento
 
 | ID | Decisión pendiente | Lo ya fijado |
 |---|---|---|
-| <a id="dec-02"></a>DEC-02 | Finalidad/base/plazo/acceso/separación/salvaguardas de estructura post-baja. | Conservación funcional decidida; seudonimizada y fuera de uso ordinario; sin habilitar uso posterior. |
+| <a id="dec-02"></a>DEC-02 | Clasificación jurídica —anónima o seudonimizada—, base, plazo, acceso, separación y salvaguardas de la estructura post-baja y de sus resultados agregados. | Producto confirma la conservación funcional y la futura explotación agregada, incluidos patrones agrupados por país; el schema y los modelos reservados permanecen dormantes. La estructura sigue fuera del diario y de toda consulta individual, y no se calculan ni exponen resultados no vacíos hasta la aprobación Legal y el contrato técnico posterior. |
 | <a id="dec-09"></a>DEC-09 | Plazos de ActivityEvent, AuditEvent, AuthEvent, SecurityAlert, aceptaciones, feedback, recibos, logs, backups y proveedores. | La baja elimina el feed personal; ningún conjunto conserva datos indefinidamente por omisión; los siete días del Vault no fijan el plazo de los demás conjuntos. |
+| <a id="dec-14"></a>DEC-14 | Si una cuenta con email ya verificado que no termina de configurar su Vault debe cerrarse automáticamente y, en su caso, después de qué plazo. | Apple y Google acreditan el email, pero no crean ni configuran el Vault. Sin completar el Vault, el onboarding permanece incompleto. La beta no añade un vencimiento nuevo para este estado; la política de cierre se decidirá después de la beta. Las cuentas por email que no verifican siguen sujetas al plazo fijo de siete días de RP-INA-005. |
+
+Para la revisión Legal de `DEC-02` deben obtenerse respuestas explícitas sobre: si la estructura y los resultados derivados pueden considerarse anónimos o continúan siendo seudónimos; la base y finalidad aplicables a personas usuarias y terceras personas; qué población puede contribuir antes y después de una baja; el tamaño mínimo de cohorte y las reglas de supresión; los campos permitidos; la separación y los roles de acceso; la frecuencia de actualización; la retención y purga tanto de fuentes como de resultados; el tratamiento de filas agregadas históricas que ya pudieran existir; y las salvaguardas frente a singularización o reidentificación.

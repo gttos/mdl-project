@@ -38,7 +38,7 @@ Permitir que una persona cree o abra su cuenta MDL mediante Sign in with Apple d
 
 Fuera de alcance:
 
-- Implementar Google o Facebook.
+- Implementar Google o Facebook. Google se define y ejecuta en su [plan propio](../sign-in-with-google/README.md), sin ampliar el alcance Apple.
 - Usar Firebase Auth como autoridad de sesión de MDL.
 - Fusionar cuentas automáticamente sólo porque dos emails coinciden.
 - Solicitar o almacenar el nombre de Apple; MDL no lo necesita para esta función.
@@ -197,7 +197,7 @@ API debe estar desplegada y configurada antes de distribuir una build que muestr
 - [ ] Revocación y baja retiran acceso y tokens sin borrar el diario por una señal ambigua.
 - [ ] No hay tokens, nonce, subject ni emails completos en logs o analítica.
 - [ ] Private Email Relay y notificaciones Apple se prueban con configuración real.
-- [ ] El botón cumple el HIG, está localizado en inglés/español y funciona con VoiceOver.
+- [ ] El botón cumple el HIG y está localizado en inglés/español. La validación específica con lectores de pantalla no forma parte del alcance actual conforme a `RP-UX-006`.
 - [ ] Revisión Legal y App Store Privacy están aprobadas antes del rollout productivo.
 
 ## Estado resumido

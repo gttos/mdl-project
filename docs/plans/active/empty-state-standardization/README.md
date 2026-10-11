@@ -1,18 +1,30 @@
 # Estandarización de empty states en iOS
 
-> **Estado:** diferida post-beta. La beta está prevista para octubre de 2026 y esta iniciativa se
-> retomará después de esa salida, con objetivo de completarla antes del lanzamiento de enero de
-> 2027. La app ya contiene algunos estados vacíos puntuales, pero todavía no existe el componente
-> común ni está auditada la cobertura de las once superficies. No bloquea la beta salvo que la
-> validación física detecte una pantalla completamente vacía, un estado confundido con error/loading
-> o un callejón sin salida para crear el primer dato.
+> **Estado:** correctivo pre-beta de estadísticas aceptado; implementación del correctivo offline de
+> la lista aceptada y validada físicamente; correctivo de arranque offline aceptado y
+> validado físicamente; estandarización completa diferida post-beta. El
+> componente común y la auditoría de las once superficies se retomarán después de la beta de octubre
+> de 2026, con objetivo de completarlas antes del lanzamiento de enero de 2027.
 > **Proyecto:** iOS
 > **Ventana prevista:** después de la beta de octubre de 2026 y antes del lanzamiento de enero de 2027
 
-> **Hallazgo físico pendiente de decisión pre-beta:** al abrir la lista de Crushes sin conexión, la
-> carga remota vacía el contenido en memoria y presenta un alert modal genérico. No es un empty state
-> válido. Si se corrige antes de beta, debe ser un correctivo acotado de error offline; si se difiere,
-> queda incorporado a IOS-02 y no se mezcla con Relationship.
+> **Decisión pre-beta vigente:** el fallo offline de la lista de Crushes se corrige antes de
+> TestFlight como un correctivo acotado. Un primer load sin contenido confirmado muestra un error
+> inline con Reintentar; un refresh fallido conserva el último estado confirmado —incluido un vacío
+> confirmado— y usa feedback no bloqueante. Ninguno presenta un vacío nuevo ni un alert modal de
+> carga. La estandarización visual de las once
+> superficies continúa diferida y este correctivo no adelanta IOS-01–05.
+
+> **Decisión pre-beta vigente:** al restaurar una sesión existente, no poder consultar por red el
+> estado de verificación del email no convierte la cuenta en no verificada ni elimina la sesión. La
+> app permanece cerrada a contenido privado y muestra un error de conexión con Reintentar. Un estado
+> confirmado como no verificado abre el gate; uno verificado continúa el bootstrap; una respuesta de
+> sesión inválida cierra la sesión. La beta no introduce un estado de verificación cacheado.
+
+> **Decisión pre-beta vigente:** Daily Hacks conserva su carrusel y la marca «Próximamente»; no forma
+> parte de este correctivo. Home no muestra cifras de maqueta y, cuando una respuesta exitosa no
+> contiene estadísticas, ofrece «Agregar Crush». El Dashboard presenta el mismo vacío accionable en
+> lugar de secciones sin datos. Esta entrega no declara completada la iniciativa de once superficies.
 
 ## Objetivo
 
@@ -58,6 +70,17 @@ Crushes.
 
 El estado de estadísticas complementa el skeleton existente después de una carga exitosa sin datos; no lo sustituye durante loading. Las tarjetas de perfil usan la variante compacta. Las redes existentes se muestran en un grid adaptable de hasta dos columnas.
 
+Para ES-07, `moment.status = empty` no basta para declarar vacío el Dashboard: una cuenta sin Crushes
+activos puede conservar métricas históricas de Crushes archivados. El vacío total sólo existe cuando
+la respuesta exitosa de API no aporta evidencia estadística en ninguna dimensión: las métricas
+opcionales del resumen son nulas; las colecciones de match no contienen ningún recuento positivo
+(pueden venir vacías o con las filas canónicas en cero); y todas las secciones variables están en
+estado vacío sin valor ni muestra usada. Un recuento negativo o una sección declarada vacía que
+incluya valor o muestra positiva se trata como una incoherencia y falla cerrado, sin ocultar el
+Dashboard. `summary.actualStatus = single` por sí solo no constituye evidencia. Loading, primer error
+y recarga fallida siguen siendo estados distintos; una recarga fallida conserva el último contenido
+confirmado y comunica el error sin presentarlo como vacío.
+
 ## Interacción entre proyectos
 
 | Proyecto | Responsabilidad funcional |
@@ -67,10 +90,11 @@ El estado de estadísticas complementa el skeleton existente después de una car
 
 ## Orden general
 
-La ejecución queda pausada hasta después de la beta de octubre de 2026. Al retomarla, primero se
-auditan los estados puntuales ya existentes para decidir cuáles se reutilizan, cuáles se sustituyen y
-qué superficies siguen realmente sin tratamiento; no se parte de la premisa de que toda la app está
-vacía de soluciones actuales.
+Antes de TestFlight se ejecutan el correctivo de ES-07 en Home y Dashboard, el correctivo offline
+acotado de la lista de Crushes y la separación entre error de red y email no verificado durante la
+restauración de sesión. Después de la beta se auditan los estados puntuales ya existentes para
+decidir cuáles se reutilizan, cuáles se sustituyen y qué superficies siguen realmente sin
+tratamiento; no se parte de la premisa de que toda la app está vacía de soluciones actuales.
 
 1. Crear el componente y las cadenas localizadas.
 2. Integrarlo en lista/timelines, mapa/estadísticas y perfil; estos grupos pueden avanzar por separado.
@@ -83,7 +107,7 @@ vacía de soluciones actuales.
 - [ ] Error, loading, vacío y contenido son mutuamente coherentes.
 - [ ] La lista conserva contenido previamente cargado ante un fallo de refresh y usa error inline en el primer load offline.
 - [ ] Los textos existen en español e inglés y no están hardcodeados.
-- [ ] VoiceOver y Dynamic Type funcionan sin pérdida de acciones o contenido.
+- [ ] ES/EN conservan acciones y contenido con el tamaño de texto normal; lectores de pantalla y texto ampliado quedan fuera por `RP-UX-006`.
 - [ ] El grid de redes mantiene enlaces e indicadores actuales y reduce la altura de la tarjeta.
 - [ ] No se incorpora trabajo sobre pantallas sin callers.
 
@@ -91,7 +115,7 @@ vacía de soluciones actuales.
 
 | Proyecto | Estado | Próximo resultado |
 |---|---|---|
-| iOS | Diferida post-beta | Tras octubre de 2026: auditar los estados existentes y ejecutar IOS-01; completar la iniciativa antes del lanzamiento de enero de 2027 |
+| iOS | Correctivos pre-beta IOS-00, IOS-00L e IOS-00B aceptados y validados | Después de la beta, auditar y ejecutar IOS-01–05 |
 
 ## Plan local
 

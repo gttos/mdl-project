@@ -70,6 +70,20 @@ Fuera de alcance:
 8. **API-SEC-05C — Staging público aislado:** cuando se necesite probar desde iPhone, Apple o un scanner externo, desplegar el mismo stack en una máquina distinta de producción, con dominio/HTTPS, datos falsos, secreto, bucket y permisos propios.
 9. **API-SEC-05D — Validación pre-beta externa:** con alcance escrito y autorización separada, ejecutar un DAST limitado contra el staging descartable, revisar dependencias y preparar el alcance de un pentest externo.
 
+## Gates externos de la beta
+
+El cierre del código de remediación no certifica la infraestructura. `API-SEC-05C` concentra desde ahora las comprobaciones que sólo pueden demostrarse en un entorno autorizado:
+
+- rangos de proxy confiables, acceso directo al origin, HTTPS y cabeceras efectivas;
+- recorrido Vault con el binario iOS vigente contra AWS S3 real, límites, checksum, expiración, cleanup, lifecycle, cuotas y recuperación;
+- worker, scheduler, cola, cache con locks compartidos y configuración efectiva de Sentry/observabilidad;
+- inventario de imágenes históricas y decisión separada de retirada o rotación si alguna incorporó material sensible;
+- conteo técnico sin datos personales de marcas históricas de inactividad antes de activar el ciclo sobre un entorno existente;
+- entrega real del aviso de inactividad, rebotes y Private Relay, además de aprobación humana/legal de su suficiencia;
+- configuración y recorridos reales de Apple, correo y demás proveedores habilitados para la beta.
+
+Estas comprobaciones son gates de despliegue u operación, no fases de código. Un scan estándar adicional queda a criterio del usuario; DAST o pentest conserva la autorización específica de `API-SEC-05D`.
+
 ## Criterios de aceptación
 
 - [ ] El inventario clasifica cada ruta como pública, autenticada o sensible, y enlaza su control principal.
@@ -80,7 +94,7 @@ Fuera de alcance:
 
 ## Relación con iniciativas activas
 
-- [`email-verification`](../email-verification/README.md): OTP, cuenta provisional y gates de sesión.
+- [Verificación de email](../../../rules/ACCOUNT.md#verificacion-email): OTP, cuenta provisional y gates de sesión.
 - [`sign-in-with-apple`](../sign-in-with-apple/README.md): identidad federada, webhooks y revocación.
 - [`vault-e2ee`](../vault-e2ee/README.md): ownership, blobs cifrados, bindings y URLs firmadas.
 

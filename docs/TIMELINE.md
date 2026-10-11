@@ -57,7 +57,9 @@ Referencias únicas:
 
 Contrato observable: [Contenido del Timeline](rules/TIMELINE.md#contenido).
 
-La lectura combina entidades, correlaciones y evidencia histórica de creación/cambio. El snapshot vigente sirve para estado y acciones; el snapshot de creación sirve para representar el hecho inicial. La paginación mantiene juntos el hito y su experiencia vinculada como un único acontecimiento lógico.
+La lectura combina entidades, correlaciones y evidencia histórica de creación/cambio. El snapshot vigente sirve para estado y acciones; el snapshot de creación sirve para representar el hecho inicial. En «Todos», la paginación mantiene juntos el hito y su experiencia vinculada como un único acontecimiento lógico.
+
+Los filtros son proyecciones, no una partición de ese resultado integrado. «Experiencias» recorre todas las Experiences —iniciales, independientes o vinculadas— una vez por identidad. «Relaciones» recorre todos los hitos —incluido el inicial del primer período— como filas estructurales planas y no presenta el contenido privado de la Experience vinculada. «Crushes» conserva sólo los bloques iniciales. El contrato observable y la ausencia de falso vacío están en [Filtros y proyecciones de lectura](rules/TIMELINE.md#filtros-y-proyecciones-de-lectura).
 
 El orden técnico documentado es `event_date DESC, created_at DESC, item_type ASC, item_id ASC`. Su aplicación y pruebas pertenecen a API; no redefine el día civil ni la unidad de agrupación.
 
@@ -68,6 +70,6 @@ Contrato completo: [Acciones del Timeline](rules/TIMELINE.md#acciones), con eleg
 ## 8. Referencias
 
 - [Arquitectura API](../../api/docs/ARCHITECTURE.md), [arquitectura iOS](../../ios/docs/ARCHITECTURE.md).
-- [Ejecución relacional](plans/active/relationship-redesign/README.md).
-- [Ejecución durable](plans/active/durable-write-feedback/README.md).
+- [Relaciones](rules/RELATIONSHIPS.md) y [Experiencias](rules/EXPERIENCES.md).
+- [Guardado y sincronización](rules/SYNC.md) y [arquitectura transversal](ARCHITECTURE.md#5-flujo-de-escritura-durable).
 - [Paridad Android](plans/active/android-parity/README.md).
