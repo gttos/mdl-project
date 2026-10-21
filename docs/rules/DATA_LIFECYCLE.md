@@ -56,6 +56,7 @@
 - **RP-INA-007.** El plazo de 20 días comienza cuando el proveedor de email acepta el aviso para entrega. MDL no necesita registrar aperturas, clics ni lectura del mensaje para aplicar la regla.
 - **RP-INA-008.** Un fallo temporal de entrega se reintenta conforme a una política finita. Un fallo general del proveedor o de la configuración no inicia el plazo de gracia. Un rechazo definitivo propio de la dirección —incluidos un rebote permanente o Private Relay desactivado— inicia los 20 días desde el último intento después de agotar los reintentos autorizados; el resultado y la causa técnica se registran sin conservar el contenido del mensaje.
 - **RP-INA-009.** El aviso de inactividad identifica a MDL, informa en español e inglés de los 18 meses sin login correcto y del cierre dentro de 20 días, y explica que sólo un login correcto en la app antes del vencimiento cancela la baja. El mensaje no incluye contenido de la cuenta, identificadores técnicos, tokens, enlaces de cancelación ni mecanismos de seguimiento. Su suficiencia jurídica y la entrega real con el proveedor se aprueban y verifican antes de operar el ciclo en el entorno de beta.
+- **RP-INA-010.** Una cuenta habilitada con email verificado que todavía no terminó de configurar su Vault no tiene un vencimiento especial. Puede iniciar sesión y cada login correcto actualiza `last_login` y cancela o reinicia el ciclo de inactividad igual que en cualquier otra cuenta verificada; si no vuelve a iniciar sesión, se aplican los 18 meses y la gracia de 20 días de `BR-3.11`. Hasta completar el Vault, el acceso funcional permanece bloqueado por el flujo obligatorio definido en [RP-VLT-035](VAULT.md#recuperacion).
 
 <a id="retirada-y-destruccion"></a>
 ## Retirada del uso normal y destrucción física
@@ -90,6 +91,10 @@ Esta tabla reúne las tareas automáticas de la beta y el resultado que cada eje
 
 Esta tabla contiene únicamente plazos funcionales ya fijados. Los plazos todavía abiertos se enumeran en [Decisiones pendientes](#decisiones-pendientes).
 
+- **RP-CON-001.** Salvo que una fila indique expresamente otra condición de inicio o vencimiento, los plazos de esta tabla son máximos contados desde la creación del registro. La purga programada elimina lo vencido en su siguiente ejecución diaria, como máximo dentro de las 24 horas posteriores al vencimiento. Una conservación excepcional sólo puede suspender la purga mediante un hold explícito con finalidad, alcance, responsable y vencimiento conforme a `RP-DER-006`.
+- **RP-CON-002.** Las aceptaciones de términos y privacidad se conservan completas mientras la cuenta está activa. Al cerrar la cuenta se eliminan IP, `user_agent` y el vínculo operativo con ella; permanece durante cinco años un recibo seudónimo mínimo con la versión aceptada y su fecha. Cumplido ese plazo se purga. El recibo no permite reactivar la cuenta ni acceder a su diario.
+- **RP-CON-003.** Los backups y snapshots de RDS o S3, cuando existan, vencen como máximo a los 30 días. Una restauración queda aislada del uso ordinario hasta reaplicar bajas, borrados y vencimientos posteriores al punto restaurado; nunca reactiva una cuenta, sesión, identidad, Vault, blob o dato ya retirado.
+
 | Conjunto | Plazo/condición | Salvedad |
 |---|---|---|
 | Inactividad | 18 meses desde `last_login` o, si falta, `email_verified_at`; después 20 días desde aviso aceptado o último intento ante rechazo definitivo | Base, transparencia y tratamiento jurídico de la falta de entrega requieren aprobación Legal. |
@@ -97,6 +102,20 @@ Esta tabla contiene únicamente plazos funcionales ya fijados. Los plazos todav�
 | Referencia entre contenido y elemento | Hasta destruir la última versión | No permanece indefinidamente hasta la baja. |
 | Revocación Apple | Hasta éxito o 30 días desde fallo final | Sólo material mínimo cifrado. |
 | Notificación Apple | 30 días | Último evento sólo mientras identidad activa. |
+| `ActivityEvent` | 7 días; las cinco actividades más recientes de cada cuenta activa permanecen hasta ser desplazadas por otras nuevas | Eliminar el elemento asociado o cerrar la cuenta las retira antes. Nunca sobrevive como feed personal a la baja. |
+| `AuditEvent` | 30 días | Metadata forense allowlisted; sin contenido privado. |
+| `AuthEvent` | 90 días | IP y `user_agent` sólo para autenticación y seguridad. |
+| `SecurityAlert` | 30 días | Incluye alertas coalescidas; sin payloads ni mensajes libres de la solicitud. |
+| `LogEntry` persistido en la API | 7 días | Registro técnico allowlisted; no sustituye auditoría, autenticación ni alertas. |
+| Logs locales rotatorios de API fuera de producción | 14 días como máximo | Producción usa `stderr`; no duplica este archivo local. |
+| CloudWatch de API | 30 días | Nginx, PHP y Laravel saneados; la configuración efectiva debe aplicar expiración. |
+| Sentry EU de API e iOS | 30 días | Sólo errores/crashes y diagnóstico allowlisted; sin replay ni perfiles de persona. |
+| PostHog Cloud EU | 90 días | Aplica tanto a eventos como a informes o agregados conservados por el proveedor; no existen perfiles persistentes. |
+| Metadata de entrega y rebotes del proveedor de email | 30 días | No conserva el cuerpo del mensaje más allá de lo imprescindible para entregarlo. |
+| Aceptaciones de términos y privacidad | Vida de la cuenta; después, recibo mínimo durante 5 años | Minimización post-baja conforme a `RP-CON-002`. |
+| Feedback general de beta | Durante la beta y hasta 30 días después de su finalización | Si no existe antes una política sustitutiva aprobada, se purga íntegramente. |
+| Feedback, recibo y hash de confirmación de baja | 30 días desde la creación del recibo | Se conservan juntos; nunca el secreto original. |
+| Backups y snapshots RDS/S3 | 30 días como máximo | Restauración aislada y sin reactivación conforme a `RP-CON-003`. |
 
 Los plazos de [sesión, verificación y recuperación del acceso](ACCOUNT.md) se definen en Cuenta. La sustitución de una versión cifrada se define en [Vault](VAULT.md#recuperacion), y las esperas de reintento en [Guardado y sincronización](SYNC.md#reintentos). Las tareas anteriores aplican esas reglas; no crean plazos alternativos.
 
@@ -108,7 +127,5 @@ Estas decisiones siguen abiertas. La documentación técnica y el comportamiento
 | ID | Decisión pendiente | Lo ya fijado |
 |---|---|---|
 | <a id="dec-02"></a>DEC-02 | Clasificación jurídica —anónima o seudonimizada—, base, plazo, acceso, separación y salvaguardas de la estructura post-baja y de sus resultados agregados. | Producto confirma la conservación funcional y la futura explotación agregada, incluidos patrones agrupados por país; el schema y los modelos reservados permanecen dormantes. La estructura sigue fuera del diario y de toda consulta individual, y no se calculan ni exponen resultados no vacíos hasta la aprobación Legal y el contrato técnico posterior. |
-| <a id="dec-09"></a>DEC-09 | Plazos de ActivityEvent, AuditEvent, AuthEvent, SecurityAlert, aceptaciones, feedback, recibos, logs, backups y proveedores. | La baja elimina el feed personal; ningún conjunto conserva datos indefinidamente por omisión; los siete días del Vault no fijan el plazo de los demás conjuntos. |
-| <a id="dec-14"></a>DEC-14 | Si una cuenta con email ya verificado que no termina de configurar su Vault debe cerrarse automáticamente y, en su caso, después de qué plazo. | Apple y Google acreditan el email, pero no crean ni configuran el Vault. Sin completar el Vault, el onboarding permanece incompleto. La beta no añade un vencimiento nuevo para este estado; la política de cierre se decidirá después de la beta. Las cuentas por email que no verifican siguen sujetas al plazo fijo de siete días de RP-INA-005. |
 
 Para la revisión Legal de `DEC-02` deben obtenerse respuestas explícitas sobre: si la estructura y los resultados derivados pueden considerarse anónimos o continúan siendo seudónimos; la base y finalidad aplicables a personas usuarias y terceras personas; qué población puede contribuir antes y después de una baja; el tamaño mínimo de cohorte y las reglas de supresión; los campos permitidos; la separación y los roles de acceso; la frecuencia de actualización; la retención y purga tanto de fuentes como de resultados; el tratamiento de filas agregadas históricas que ya pudieran existir; y las salvaguardas frente a singularización o reidentificación.
