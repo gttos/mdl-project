@@ -1,14 +1,12 @@
 # Reglas de producto — Timeline y Home
 
-**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica; las decisiones expresamente pendientes continúan abiertas y no autorizan a inventar comportamiento.
-
 [Índice de reglas](../PRODUCT.md) · Presentación de la historia, orden, agrupación, acciones disponibles y actividad reciente de Home.
 
 <a id="contenido"></a>
 ## Contenido e identidad
 
 - **RP-TIM-020.** Cada elemento de la vista integrada «Todos» identifica exactamente un día civil, un Crush y uno de estos acontecimientos: bloque inicial; experiencia independiente dentro de un período; creación de un período posterior; o hito de cambio de situación o cierre. Un cambio pendiente representa provisionalmente uno de esos mismos acontecimientos y conserva su identidad. Las vistas filtradas proyectan las entidades que componen esos acontecimientos conforme a RP-TIM-024..029.
-- **RP-TIM-021.** La estructura legible de un elemento contiene `id`, `type`, `date` y la referencia al Crush. Añade `experience`, `relationship_period` y `relationship_milestone` únicamente cuando ese acontecimiento los representa. `relationship_milestone` contiene la identidad, fecha, situación anterior, situación resultante, motivo de cierre, vínculo obligatorio con su experiencia y capacidades calculadas definidas en el [inventario relacional](RELATIONSHIPS.md#inventario).
+- **RP-TIM-021.** Cada acontecimiento identifica su identidad, tipo, fecha y Crush. Incluye únicamente la experiencia, período o hito que representa, con las asociaciones y capacidades de su inventario relacional.
 - **RP-TIM-001.** El Timeline muestra la historia realmente registrada y nunca inventa acontecimientos para completar huecos.
 - **RP-TIM-002.** El Timeline de un Crush sólo contiene acontecimientos de ese Crush. El Timeline global reúne los de la misma cuenta conservando su contexto.
 - **RP-TIM-003.** Los elementos eliminados o retirados del uso ordinario y su contenido dependiente no aparecen en el Timeline.
@@ -30,12 +28,12 @@
 <a id="filtros"></a>
 ## Filtros y proyecciones de lectura
 
-- **RP-TIM-024.** Los filtros del Timeline son cuatro proyecciones de lectura: «Todos», «Crushes», «Experiencias» y «Relaciones». No forman una partición excluyente de las entidades: una Experience vinculada forma parte del acontecimiento compuesto de «Todos», aparece como cita en «Experiencias» y su hito aparece como evolución estructural en «Relaciones». Dentro de cada proyección, cada identidad aparece una sola vez.
+- **RP-TIM-024.** Los filtros del Timeline son cuatro proyecciones de lectura: «Todos», «Crushes», «Experiencias» y «Relaciones». No forman una partición excluyente de las entidades: una Experience vinculada forma parte del acontecimiento compuesto de «Todos», aparece como experiencia en «Experiencias» y su hito aparece como evolución estructural en «Relaciones». Dentro de cada proyección, cada identidad aparece una sola vez.
 - **RP-TIM-025.** «Todos» conserva la historia integrada: bloque inicial, Experiences independientes y cada hito posterior junto con su Experience vinculada, sin duplicar sus partes como tarjetas separadas.
 - **RP-TIM-026.** «Crushes» muestra un bloque inicial por Crush y no convierte sus partes en filas independientes dentro de esa proyección.
-- **RP-TIM-027.** «Experiencias» muestra todas las Experiences de la cuenta o del Crush seleccionado, ordenadas por su día civil: la inicial, las independientes y las vinculadas a un hito o a la apertura de otro período. Cada tarjeta permite leer la cita —fecha, satisfacción y contenido privado autorizado desde el Vault—; su asociación relacional no la excluye ni la duplica. Cuando está vinculada, conserva como contexto no narrativo la identidad y las capacidades del hito necesarias para ofrecer únicamente las acciones válidas.
-- **RP-TIM-028.** «Relaciones» muestra todos los hitos relacionales, incluido el hito inicial del primer período, en una lista cronológica plana. Cada fila identifica el Crush, la fecha y si comenzó un período, cambió de situación o lo cerró; muestra situación anterior cuando exista, situación resultante y motivo de cierre cuando corresponda. No presenta lugar, descripción ni satisfacción de la Experience vinculada, aunque conserva su asociación estructural para integridad y capacidades.
-- **RP-TIM-029.** Globalmente las cuatro proyecciones se ordenan por día civil descendente y mantienen el contexto del Crush; dentro del Timeline de un Crush aplican la misma semántica limitada a ese Crush. Un resultado legítimamente vacío se distingue de un rechazo HTTP, un fallo de transporte o un elemento conocido que no puede decodificarse: estos últimos muestran error recuperable y no se convierten silenciosamente en «no hay datos».
+- **RP-TIM-027.** «Experiencias» muestra todas las Experiences de la cuenta o del Crush seleccionado, ordenadas por su día civil: la inicial, las independientes y las vinculadas a un hito o a la apertura de otro período. Cada tarjeta permite leer la experiencia —fecha, satisfacción y contenido privado autorizado desde el Vault—; su asociación relacional no la excluye ni la duplica. Cuando está vinculada, conserva como contexto no narrativo la identidad y las capacidades del hito necesarias para ofrecer únicamente las acciones válidas.
+- **RP-TIM-028.** «Relaciones» muestra todos los hitos relacionales, incluido el hito inicial del primer período, en orden cronológico. Cada fila identifica el Crush, la fecha y si comenzó un período, cambió de situación o lo cerró; muestra situación anterior cuando exista, situación resultante y motivo de cierre cuando corresponda. No presenta lugar, descripción ni satisfacción de la Experience vinculada, aunque conserva su asociación estructural para integridad y capacidades.
+- **RP-TIM-029.** Las cuatro consultas se ordenan por día civil descendente y conservan el contexto del Crush. Una consulta vacía confirmada se distingue de rechazo, fallo de comunicación o contenido ilegible; estos últimos conservan un error recuperable.
 
 <a id="acciones"></a>
 ## Acciones disponibles
@@ -55,8 +53,9 @@
 - **RP-HOM-001.** La actividad reciente registra el alta confirmada de un Crush, la creación confirmada de una experiencia y cada cambio relacional nuevo. Una corrección o eliminación actualiza la historia sin crear una actividad nueva.
 - **RP-HOM-002.** El período inicial forma parte del alta del Crush y no genera una segunda actividad.
 - **RP-HOM-003.** Una experiencia y un cambio relacional guardados juntos producen una única actividad que representa la acción compuesta.
-- **RP-HOM-004.** La API conserva en la actividad únicamente las identidades, fechas, tipos y asociaciones estructurales necesarias. El nombre del Crush, el lugar y la descripción se resuelven desde el Vault desbloqueado.
+- **RP-HOM-004.** La API conserva en la actividad únicamente las identidades, la fecha funcional del acontecimiento, los tipos y las asociaciones estructurales necesarias. Una actividad de experiencia referencia su Crush y su Experience; cuando esa Experience está vinculada a un hito relacional, referencia además el período, el hito y el `situation_id` resultante. El nombre del Crush, el lugar y la descripción se resuelven desde el Vault desbloqueado.
 - **RP-HOM-005.** Tocar una experiencia reciente abre el Crush al que pertenece mediante `crush_id`.
-- **RP-HOM-006.** Los consejos diarios de la beta se presentan en el idioma elegido y son contenido informativo. No analizan el diario ni modifican sus datos.
+- **RP-HOM-006.** Los consejos diarios son información localizada en español e inglés con cinco categorías: regulación emocional, límites, autoconocimiento, comunicación y conexión. Permiten consultar su título y consejo. El contenido es independiente del diario y conserva sus datos.
+- **RP-HOM-007.** La actividad reciente identifica el Crush, la fecha funcional y el lugar de una experiencia. Cuando existe un cambio relacional, informa de la situación resultante exacta del catálogo y distingue ese acontecimiento compuesto de una experiencia independiente. El resumen excluye satisfacción y descripción.
 
 Los requisitos para modificar cada elemento pertenecen a [Crush](CRUSH.md), [Experiencias](EXPERIENCES.md) y [Relaciones](RELATIONSHIPS.md). Los conflictos entre cambios pendientes se definen en [Guardado y sincronización](SYNC.md#conflictos).

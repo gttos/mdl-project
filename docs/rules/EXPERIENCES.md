@@ -1,7 +1,5 @@
 # Reglas de producto — Experiencias
 
-**Estado de revisión: FINALIZADO.** La definición funcional de este archivo está cerrada por Producto. Este estado no certifica implementación ni aprobación jurídica; las decisiones expresamente pendientes continúan abiertas y no autorizan a inventar comportamiento.
-
 [Índice de reglas](../PRODUCT.md) · Experiencia inicial y posteriores: datos, fechas, creación, edición, eliminación y vinculación con relaciones.
 
 Una **experiencia** conserva qué ocurrió con un Crush en un día civil y pertenece siempre a un único período relacional. Es **independiente** cuando permanece dentro de ese período sin hito porque no registró una situación nueva; «independiente» nunca significa que exista fuera de un período. Cuando sí registra una situación nueva, queda vinculada al hito correspondiente. La experiencia no sustituye al hito: sus datos propios se rigen por este documento y la estructura relacional, por [Relaciones](RELATIONSHIPS.md).
@@ -9,35 +7,78 @@ Una **experiencia** conserva qué ocurrió con un Crush en un día civil y perte
 <a id="inventario"></a>
 ## Inventario funcional de una experiencia
 
-- **RP-EXP-025.** Una experiencia de la beta se compone del siguiente inventario cerrado. Cada ampliación requiere una nueva decisión de Producto.
+- **RP-EXP-025.** Una experiencia de la beta se compone del siguiente inventario cerrado.
 
-| Tratamiento | Dato exacto | Nombre canónico | Condición y uso autorizado |
-|---|---|---|---|
-| API legible | Identificador de la experiencia | `id` | Lo genera el cliente MDL antes de persistir, es inmutable y se reutiliza en reintentos, ediciones, movimientos o vínculos. |
-| API legible | Cuenta propietaria | `user_id` | Es inmutable y limita la experiencia a su cuenta propietaria. |
-| API legible | Crush propietario | `crush_id` | Es obligatorio e inmutable. Una experiencia no cambia de Crush. |
-| API legible | Día de la experiencia | `date` | Es obligatorio, se conserva como día civil y cumple las reglas cronológicas del Crush. |
-| API legible | Satisfacción | `satisfaction_id` | Es obligatoria y admite exactamente los enteros 1, 2, 3, 4 o 5. |
-| Administrado por el sistema | Correlación de una acción compuesta | `correlation_id` | Une la experiencia con el bloque inicial o con un cambio relacional registrado en la misma acción. No es editable ni visible como contenido de la experiencia. |
-| Administrado por el sistema | Período al que pertenece | `relationship_period_id` | Es obligatorio e identifica el único período que contiene la experiencia. |
-| Derivado por la API | Hito vinculado | `relationship_milestone_id` | Sólo tiene valor cuando la experiencia registra una situación nueva dentro de su período. Se obtiene desde el hito cuyo `experience_id` apunta a la experiencia; no exige otro vínculo físico y la coincidencia de fechas por sí sola nunca lo crea. |
-| Administrado por el sistema | Fechas técnicas de creación, actualización y eliminación | `created_at`, `updated_at`, `deleted_at` | Sostienen orden, sincronización y ciclo de vida. No sustituyen `date`. |
-| Vault opaco | Lugar | `place` dentro del payload Vault | Es texto libre obligatorio de hasta 255 caracteres, privado de esa experiencia y sólo se muestra con el Vault desbloqueado. |
-| Vault opaco | Descripción | `description` dentro del payload Vault | Es texto libre obligatorio de hasta 5.000 caracteres, constituye el único texto descriptivo privado de esa experiencia y sólo se muestra con el Vault desbloqueado. |
+| Tratamiento | Dato exacto | Condición y uso autorizado |
+| --- | --- | --- |
+| API legible | Identificador de la experiencia | Lo genera el cliente MDL antes de persistir, es inmutable y se reutiliza en reintentos, ediciones, movimientos o vínculos. |
+| API legible | Cuenta propietaria | Es inmutable y limita la experiencia a su cuenta propietaria. |
+| API legible | Crush propietario | Es obligatorio e inmutable. Una experiencia no cambia de Crush. |
+| API legible | Día de la experiencia | Es obligatorio, se conserva como día civil y cumple las reglas cronológicas del Crush. |
+| API legible | Satisfacción | Es obligatoria y admite exactamente los enteros 1, 2, 3, 4 o 5. |
+| API legible | Emociones | Conjunto opcional de IDs de RP-EXP-029; vacío se representa como `[]`. |
+| API legible | Conexión, escucha y deseo posterior | Selecciones opcionales independientes de RP-EXP-029; sin respuesta se representan como `null`. |
+| API legible | Autenticidad, seguridad y expresión de límites | Selecciones opcionales independientes de RP-EXP-029; sin respuesta se representan como `null`. |
+| Administrado por el sistema | Correlación de una acción compuesta | Une la experiencia con el bloque inicial o con un cambio relacional registrado en la misma acción. No es editable ni visible como contenido de la experiencia. |
+| Administrado por el sistema | Período al que pertenece | Es obligatorio e identifica el único período que contiene la experiencia. |
+| Derivado por la API | Hito vinculado | Sólo tiene valor cuando la experiencia registra una situación nueva dentro de su período. La asociación explícita identifica el hito; la coincidencia de fechas por sí sola nunca crea ese vínculo. |
+| Administrado por el sistema | Fechas técnicas de creación, actualización y eliminación | Sostienen orden, sincronización y ciclo de vida. No sustituyen `date`. |
+| Vault opaco | Lugar | Es texto libre obligatorio de hasta 255 caracteres, privado de esa experiencia y sólo se muestra con el Vault desbloqueado. |
+| Vault opaco | Descripción | Es el relato libre obligatorio de hasta 5.000 caracteres y sólo se muestra con el Vault desbloqueado. |
+| Vault opaco | Reflexión | Es un texto libre opcional de hasta 5.000 caracteres sobre lo aprendido; sin respuesta se representa como `null`. Sólo se muestra con el Vault desbloqueado. |
 
-- **RP-EXP-026.** La estructura funcional legible de una experiencia está formada por su identidad, propiedad, fecha, satisfacción y asociaciones. El contenido privado de su payload Vault está formado exactamente por `place` y `description`; `satisfaction_id` pertenece exclusivamente a la estructura funcional y no se serializa ni se duplica dentro del payload cifrado. El dispositivo cifra ese payload antes de transferirlo, conserva localmente la entry cifrada y sincroniza con el Vault remoto únicamente ciphertext como copia cifrada recuperable. `place` y `description` sólo se descifran en la memoria de un dispositivo autorizado que haya desbloqueado o recuperado el mismo Vault; la API funcional interpreta únicamente la estructura de la experiencia.
+- **RP-EXP-026.** La estructura funcional legible de una experiencia está formada por su identidad, propiedad, fecha, satisfacción, las siete dimensiones de respuestas estructuradas y sus asociaciones. El contenido privado de su payload Vault está formado exactamente por `place`, `description` y `reflection`; satisfacción y respuestas estructuradas pertenecen exclusivamente a la estructura funcional y no se serializan ni se duplican dentro de ese payload. El dispositivo cifra el payload antes de transferirlo, conserva localmente la entry cifrada y sincroniza con el Vault remoto únicamente ciphertext como copia cifrada recuperable. Sus textos sólo se descifran en la memoria de un dispositivo autorizado que haya desbloqueado o recuperado el mismo Vault; la API funcional interpreta únicamente la estructura de la experiencia.
 
 <a id="inicial"></a>
 ## Experiencia inicial obligatoria
 
 - **RP-INI-001.** Toda alta de un Crush exige una experiencia inicial completa que explique cómo se conocieron. Su fecha es `met_at`; lugar, descripción y satisfacción son obligatorios. Mientras cualquiera de esos datos falte o sea inválido, el alta no puede confirmarse y la aplicación señala todos los campos que deben corregirse.
-- **RP-INI-002.** Lugar y descripción son información sensible y viven exclusivamente dentro del Vault. La aplicación los cifra en el dispositivo antes de transferir el payload, conserva la entry cifrada local y sincroniza con el Vault remoto únicamente ciphertext como copia cifrada recuperable. Sólo un dispositivo autorizado que desbloquee o recupere el mismo Vault los descifra para la persona propietaria. De los tres campos propios de la experiencia inicial, la API funcional interpreta únicamente el identificador de satisfacción (`satisfaction_id`), además de la fecha y las asociaciones estructurales necesarias.
+- **RP-INI-002.** Lugar, descripción y la reflexión opcional viven exclusivamente dentro del Vault con las garantías de RP-EXP-026. La API interpreta satisfacción y las respuestas estructuradas opcionales, además de fecha y asociaciones. La experiencia inicial utiliza los mismos niveles y catálogos que las posteriores, sin exigir ninguna de las respuestas nuevas.
 - **RP-INI-003.** La experiencia inicial forma parte del bloque inicial y queda vinculada al Crush, al período inicial y a su hito inicial.
 
 <a id="contenido"></a>
 ## Contenido privado de la experiencia
 
 - **RP-VLT-006.** Cada experiencia tiene una única descripción, identificada como `description`, y vive en el payload Vault de esa experiencia.
+
+- **RP-EXP-032.** La reflexión es un texto privado opcional separado del relato y pertenece a la misma experiencia. Se cifra con lugar y descripción; permanece excluida de API legible, analítica y LLM. Su información de protección conserva el significado de RP-EXP-027.
+- **RP-EXP-027.** Descripción informa de que su contenido se guarda cifrado y permanece privado entre cuentas. Esa garantía se refiere al relato y se distingue del tratamiento de fechas, satisfacción y respuestas estructuradas.
+
+<a id="niveles"></a>
+## Niveles de detalle y respuestas
+
+- **RP-EXP-028.** Cada experiencia admite los niveles acumulativos Breve, Con detalle y Reflexión, con las preguntas 1–3, 1–6 y 1–10 de la tabla. Fecha y lugar quedan fuera de ese conteo. Elegir un nivel o consultar opciones conserva las respuestas hasta que la persona las cambie expresamente.
+
+| Nº | Dato | Significado funcional |
+|---|---|---|
+| 1 | Satisfacción | Valoración global de la experiencia, de 1 a 5. |
+| 2 | Emociones | Emociones experimentadas durante el encuentro. |
+| 3 | Descripción | Relato privado de lo ocurrido y de lo que se quiere recordar. |
+| 4 | Conexión | Grado de conexión percibida con la otra persona. |
+| 5 | Escucha | Grado en que la persona se sintió escuchada. |
+| 6 | Deseo posterior | Qué desea que ocurra después de la experiencia. |
+| 7 | Autenticidad | Grado en que pudo mostrarse tal como es. |
+| 8 | Seguridad | Percepción de seguridad durante el encuentro. |
+| 9 | Límites | Posibilidad de expresar lo que quería y lo que no. |
+| 10 | Reflexión | Aprendizaje privado sobre lo que quiere o necesita. |
+
+- **RP-EXP-029.** Los siguientes catálogos son cerrados y comparten IDs entre plataformas e idiomas. Los IDs identifican opciones; no constituyen por sí mismos magnitudes promediables. Satisfacción conserva su escala 1–5. No se añade texto libre para «Otra / Otra cosa».
+
+| Campo | IDs y etiquetas ES / EN |
+|---|---|
+| `emotion_ids` | 1 Alegría / Joy; 2 Calma / Calm; 3 Ilusión / Excitement; 4 Nervios / Nervousness; 5 Confusión / Confusion; 6 Tristeza / Sadness; 7 Decepción / Disappointment; 8 Otra / Other; 9 No lo sé / Not sure. |
+| `connection_id` | 1 Nada / None; 2 Poca / A little; 3 Algo / Some; 4 Bastante / Quite a lot; 5 Mucha / A lot; 6 No lo sé / Not sure. |
+| `listening_id`, `authenticity_id` | 1 Nada / Not at all; 2 Poco / A little; 3 A ratos / At times; 4 Bastante / Quite a lot; 5 Mucho / Very much; 6 No lo sé / Not sure. |
+| `desired_next_step_id` | 1 Volver a compartir algo / Spend time together again; 2 Tomarme tiempo / Take some time; 3 No continuar / Not continue; 4 No lo sé / Not sure; 5 Otra cosa / Something else. |
+| `safety_id` | 1 Sí / Yes; 2 En parte / Partly; 3 No / No; 4 No lo sé / Not sure; 5 No aplica / Not applicable. |
+| `boundaries_id` | 1 Sí / Yes; 2 En parte / Partly; 3 No / No; 4 No surgió la ocasión / It did not come up; 5 No lo sé / Not sure. |
+
+- **RP-EXP-030.** Las siete respuestas nuevas y la reflexión son opcionales, sin preselección ni valor inferido. `emotion_ids` admite cualquier subconjunto sin duplicados del catálogo, incluidas emociones mezcladas, y se normaliza por ID ascendente; no se infiere una restricción de exclusividad entre opciones. Las otras seis dimensiones admiten un único ID o `null`. Los IDs deben ser enteros reales del catálogo; no se aceptan booleanos, decimales ni strings numéricos. Elegir «No lo sé», «No aplica» u otra opción explícita es distinto de no responder. Se mantienen los cuatro datos obligatorios y límites de RP-EXP-003.
+- **RP-EXP-031.** Alta inicial y posterior guardan todas las respuestas presentes de forma atómica con la estructura existente; las no informadas se inicializan como `[]` o `null`. En edición, omitir una dimensión conserva el valor, `[]` vacía emociones y `null` retira una selección simple. Una selección inválida rechaza toda la acción. Las lecturas confirmadas publican siempre las siete dimensiones con su representación canónica; una clave omitida no se trata como ausencia de respuesta por compatibilidad pre-beta. Los snapshots durables congelan también presencia y valores para reintentos y correcciones.
+- **RP-EXP-033.** El nivel inicial es Breve. Elegir otro nivel modifica sólo esa experiencia; cambiar expresamente el nivel habitual modifica una preferencia local separada por cuenta, conservada entre aperturas y retirada al dar de baja la cuenta. Cada Crush utiliza esa misma preferencia de cuenta.
+- **RP-EXP-034.** Cambiar de nivel, avanzar o volver conserva respuestas y valores, incluidos los que queden ocultos al guardar. Editar abre un nivel suficiente para consultar todas las respuestas existentes, manteniendo la preferencia habitual. Elegir Reflexión permite responder libremente a las preguntas opcionales. El nivel es una elección de consulta y entrada; las estadísticas utilizan las respuestas guardadas.
+- **RP-EXP-035.** Las respuestas de una experiencia conservan independientes situaciones, períodos, hitos, match y valoraciones del Crush. Seguridad, autenticidad y límites son dimensiones distintas. La consulta permite acceder al contexto, lugar, descripción, satisfacción, todas las respuestas y reflexión disponibles, con sus garantías respectivas, sin generar una puntuación compuesta, diagnóstico o interpretación automática.
+- **RP-EXP-036.** Las respuestas estructuradas conservan el tratamiento de RP-EXP-026 y quedan excluidas de logs, diagnóstico y analítica de uso. La información de cifrado de Descripción y Reflexión se refiere exclusivamente a esos textos; las aceptaciones y consultas jurídicas mantienen su función propia.
 
 <a id="crear"></a>
 ## Crear una experiencia
@@ -73,3 +114,26 @@ Una **experiencia** conserva qué ocurrió con un Crush en un día civil y perte
 - **RP-EXP-024.** El contenido privado de una experiencia eliminada sigue las reglas de retirada y destrucción de [Vault](VAULT.md) y [Tareas automáticas y plazos](DATA_LIFECYCLE.md#tareas).
 
 Las opciones de cambio relacional se rigen por [Relaciones](RELATIONSHIPS.md#trayectos). Guardar una experiencia junto con un cambio no amplía los trayectos ni vuelve editable un hito o período histórico.
+
+### Escenarios de aceptación de la explicación de Descripción
+
+| ID | Dado / Cuando / Entonces | Regla |
+|---|---|---|
+| GWT-ODM-20 | Consultar Descripción informa de su cifrado y privacidad sin atribuirlos a la estructura legible. | RP-EXP-027 |
+
+<a id="escenarios-niveles"></a>
+## Escenarios de niveles, respuestas y lectura
+
+| ID | Dado / Cuando / Entonces | Regla |
+|---|---|---|
+| GWT-EXP-D01 | Dado el catálogo, al consultarlo en ES/EN se obtienen los mismos IDs y opciones cerradas; no se devuelven selecciones de cuentas. | RP-EXP-029 |
+| GWT-EXP-D02 | Elegir un nivel permite completar 3/6/10 preguntas sin respuestas inferidas ni cambio relacional implícito. | RP-EXP-028/030/035 |
+| GWT-EXP-D03 | Dado un conjunto de emociones o una selección simple, al validar se permiten sólo los tipos/IDs canónicos; duplicados y valores inválidos rechazan la acción sin I/O de escritura. | RP-EXP-029/030 |
+| GWT-EXP-D04 | Dada un alta inicial o posterior, al guardar se confirman juntas estructura y respuestas; la lectura presenta las siete dimensiones incluso sin respuesta. | RP-EXP-031, RP-INI-001..003 |
+| GWT-EXP-D05 | Dada una experiencia confirmada, al editar se distingue omisión, `[]`, `null` y sustitución sin borrar otras dimensiones ni modificar identidad o asociaciones. | RP-EXP-031 |
+| GWT-EXP-D06 | Cambiar de nivel o volver conserva las respuestas y editar permite consultarlas todas. | RP-EXP-028/034 |
+| GWT-EXP-D07 | Dada la preferencia de una cuenta, al cambiar nivel sólo para una experiencia no cambia la habitual; la acción explícita y Ajustes sí la cambian y el relanzamiento la conserva sin cruzarla a otra cuenta. | RP-EXP-033 |
+| GWT-EXP-D08 | Lugar, descripción y reflexión permanecen cifrados y separados de satisfacción y respuestas legibles. | RP-EXP-026/027/032/036 |
+| GWT-EXP-D09 | Dada una escritura offline o ambigua, al relanzar/reintentar/corregir se reutilizan IDs, snapshot, presencia de cambios y `operationId`; no se reconstruye desde una lectura posterior ni se pierde lo oculto. | RP-EXP-031/034 y Sync |
+| GWT-EXP-D10 | Dadas respuestas y texto en dos cuentas, al bloquear/cambiar cuenta una respuesta tardía no publica contenido ni preferencias de la anterior; logs/analítica no reciben respuestas o textos. | RP-ID-007, RP-EXP-036 |
+| GWT-EXP-D16 | Consultar una experiencia permite acceder a todas sus respuestas y textos, conservando contexto, acciones y datos. | RP-EXP-035 |
